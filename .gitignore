@@ -1,7 +1,7 @@
 # Vault password file
 .vault_pass
 
-# accidental non-crypted files
+# Accidental non-crypted files
 group_vars/secrets.yml.dec
 *.dec
 
