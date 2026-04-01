@@ -1,0 +1,3 @@
+---
+- import_playbook: security/ssh.yml
+- import_playbook: security/ufw.yml

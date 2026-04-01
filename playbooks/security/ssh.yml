@@ -1,0 +1,39 @@
+---
+- name: SSH hardening
+  hosts: linux
+  become: true
+  tasks:
+    
+    - name: SSH changing port
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^Port '
+        line: 'Port {{ ssh_port }}'
+      notify: Restart SSH
+    
+    - name: SSH PermitRootLogin
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PermitRootLogin'
+        line: 'PermitRootLogin no'
+      notify: Restart SSH
+    
+    - name: SSH Password Auth
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+      notify: Restart SSH
+
+    - name: SSH X11 Forwarding
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^X11Forwarding'
+        line: 'X11Forwarding no'
+      notify: Restart SSH
+
+  handlers:
+    - name: Restart SSH
+      ansible.builtin.service:
+        name: sshd
+        state: restarted

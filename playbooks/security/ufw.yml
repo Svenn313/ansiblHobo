@@ -1,0 +1,80 @@
+---
+- name: UFW configuration
+  hosts: linux
+  become: true
+  tasks:
+    
+    - name: Deny routed and incoming
+      community.general.ufw:
+        state: enabled
+        direction: "{{ item.name }}"
+        policy: deny
+      loop:
+        - name: routed
+        - name: incoming
+    
+    - name: Allow outgoing
+      community.general.ufw:
+        state: enabled
+        direction: outgoing
+        policy: allow
+    
+    - name: LIMIT SSH
+      community.general.ufw:
+        rule: limit
+        port: "{{ ssh_port }}"
+        proto: tcp
+    
+    - name: Allow TCP public ports
+      community.general.ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - "80"
+        - "443"
+        - "8448"
+    
+    - name: Allow DNS
+      community.general.ufw:
+        rule: allow
+        port: 53
+        proto: any
+        src: "{{ item }}"
+      loop:
+        - "192.168.1.0/24"
+        - "172.17.0.0/16"
+    
+    - name: Public rules
+      community.general.ufw:
+        rule: allow
+        port: "{{ item.port }}"
+        proto: "{{ item.proto }}"
+      loop:
+        - { port: "5353", proto: "udp" }
+        - { port: "9987", proto: "udp" }
+        - { port: "10011", proto: "tcp" }
+        - { port: "30033", proto: "tcp" }
+    
+    - name: LAN Rules
+      community.general.ufw:
+        rule: allow
+        port: "{{ item.port }}"
+        proto: "{{ item.proto }}"
+        src: 192.168.1.0/24
+      loop:
+        - { port: "8123", proto: "tcp" }
+        - { port: "67", proto: "udp" }
+        - { port: "68", proto: "udp" }
+    
+    - name: Allow all LAN
+      community.general.ufw:
+        rule: allow
+        src: 192.168.1.0/24
+
+    - name: Allow DHCP out
+      community.general.ufw:
+        rule: allow
+        port: "68"
+        proto: udp
+        direction: out

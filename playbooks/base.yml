@@ -1,0 +1,100 @@
+---
+- name: Base configuration
+  hosts: linux
+  become: true
+
+  tasks:
+    - name: apt update
+      ansible.builtin.apt:
+        name: "*"
+        update_cache: yes
+
+    - name: apt upgrade
+      ansible.builtin.apt:
+        upgrade: yes
+    
+    - name: Packages install
+      ansible.builtin.apt:
+        name:
+          - zsh
+          - vim
+          - neovim
+          - fzf
+          - ripgrep
+          - fd-find
+          - bat
+          - git
+          - wget
+          - btop
+          - htop
+          - curl
+        state: present
+
+    - name: zsh as default shell
+      ansible.builtin.user:
+        name: "{{ linux_user }}"
+        shell: /bin/zsh
+
+    - name: install oh-my-zsh
+      become_user: "{{ linux_user }}"
+      ansible.builtin.shell: |
+        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh) --unattended"
+      args:
+        creates: "/home/{{ linux_user }}/.oh-my-zsh"
+    
+    - name: install custom zsh plugins
+      ansible.builtin.git:
+        repo: "{{ item.repo }}"
+        dest: "/home/{{ linux_user }}/.oh-my-zsh/custom/plugins/{{ item.name }}"
+      become_user: "{{ linux_user }}"
+      loop:
+        - { name: fast-syntax-highlighting, repo: "https://github.com/zdharma-continuum/fast-syntax-highlighting.git" }
+        - { name: zsh-autosuggestions, repo: "https://github.com/zsh-users/zsh-autosuggestions.git" }
+        - { name: zsh-bat, repo: "https://github.com/fdellwing/zsh-bat.git" }
+
+    - name: Copy zshrc and p10k file
+      ansible.builtin.copy:
+        src: "files/{{ item.name }}"
+        dest: "/home/{{ linux_user }}/{{ item.name }}"
+        mode: '0644'
+        owner: "{{ linux_user }}"
+      loop:
+        - name: .zshrc
+        - name: .p10k.zsh
+
+    - name: Set global user name
+      community.general.git_config:
+        name: user.name
+        value: "{{ git_username }}"
+        scope: global
+
+    - name: Set global user email
+      community.general.git_config:
+        name: user.email
+        value: "{{ git_email }}"
+        scope: global
+
+    - name: Set timezone to Europe/Paris
+      community.general.timezone:
+        name: Europe/Paris
+
+    - name: Ensure the locale exists and is correctly setup
+      community.general.locale_gen:
+        name: en_US.UTF-8
+        state: present
+
+    - name: Create home sub directories
+      ansible.builtin.file:
+        path: "/home/{{ linux_user }}/{{ item.name }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - name: documents
+        - name: downloads
+
+    - name: Lowercasing XDG directories
+      ansible.builtin.copy:
+        src: files/user-dirs.dirs
+        dest: "/home/{{ linux_user}}/.config/user-dirs.dirs"
+        mode: '0644'
+        owner: "{{ linux_user }}"
