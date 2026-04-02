@@ -1,3 +1,4 @@
 ---
 - import_playbook: security/ssh.yml
 - import_playbook: security/ufw.yml
+- import_playbook: security/fail2ban.yml

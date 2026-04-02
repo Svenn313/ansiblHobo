@@ -1,0 +1,18 @@
+---
+- name: fail2ban Configuration
+  hosts: linux
+  become: true
+
+  tasks:
+    
+    - name: Install fail2ban
+      ansible.builtin.apt:
+        name: fail2ban
+        state: present
+    
+    - name: Copy fail2ban configuration
+      ansible.builtin.copy:
+        src: "{{ project_root }}/../files/jail.local"
+        dest: /etc/fail2ban/jail.conf
+        mode: '0644'
+        owner: root

@@ -54,7 +54,7 @@
 
     - name: Copy zshrc and p10k file
       ansible.builtin.copy:
-        src: "files/{{ item.name }}"
+        src: "{{ project_root }}/files/{{ item.name }}"
         dest: "/home/{{ linux_user }}/{{ item.name }}"
         mode: '0644'
         owner: "{{ linux_user }}"
@@ -94,7 +94,7 @@
 
     - name: Lowercasing XDG directories
       ansible.builtin.copy:
-        src: files/user-dirs.dirs
+        src: "{{ project_root }}/files/user-dirs.dirs"
         dest: "/home/{{ linux_user}}/.config/user-dirs.dirs"
         mode: '0644'
         owner: "{{ linux_user }}"

@@ -1,0 +1,41 @@
+[DEFAULT]
+# Paramètres par défaut pour toutes les jails
+ignoreip = 127.0.0.1/8 10.2.0.2/32 ::1 #10.2.0.2 -> IP de la connexion Wiremission pour la arrStack
+bantime = 10m
+findtime = 10m
+maxretry = 5
+
+[sshd]
+enabled = true
+port = 22923
+filter = sshd
+logpath = /var/log/ssh_jail.log
+maxretry = 5
+
+[nginx-http-auth]
+enabled = true
+port = http,https
+filter = nginx-http-auth
+logpath = /var/log/nginx/error.log
+maxretry = 5
+
+[nginx-botsearch]
+enabled = true
+port = http,https
+logpath = /var/log/nginx/access.log
+maxretry = 2
+bantime = 86400
+
+[nginx-bad-request]
+enabled = true
+port = http,https
+logpath = /var/log/nginx/access.log
+maxretry = 5
+bantime = 86400
+
+[nginx-limit-req]
+enabled = true
+port = http,https
+logpath = /var/log/nginx/error.log
+maxretry = 10
+bantime = 3600
