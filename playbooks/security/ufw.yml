@@ -8,7 +8,17 @@
       ansible.builtin.apt:
         name: ufw
         state: present
+
+    - name: Reset UFW actual configuration
+      community.general.ufw:
+        state: reset
     
+    - name: LIMIT SSH
+      community.general.ufw:
+        rule: limit
+        port: "{{ ssh_port }}"
+        proto: tcp
+
     - name: Deny routed and incoming
       community.general.ufw:
         state: enabled
@@ -23,13 +33,7 @@
         state: enabled
         direction: outgoing
         policy: allow
-    
-    - name: LIMIT SSH
-      community.general.ufw:
-        rule: limit
-        port: "{{ ssh_port }}"
-        proto: tcp
-    
+   
     - name: Allow TCP public ports
       community.general.ufw:
         rule: allow

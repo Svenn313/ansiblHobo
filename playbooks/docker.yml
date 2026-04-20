@@ -1,0 +1,11 @@
+---
+- name: cloudHobo configuration and installation
+  hosts: linux
+  become: true
+  tasks:
+    - name: Clone cloudHobo repositories
+      ansible.builtin.git:
+        repo: "git@github.com:Svenn313/CloudHobo.git"
+        dest: "/tmp/cloudHobo"
+        key_file: "/home/{{ linux_user }}/.ssh/gitKey"
+      become_user: "{{ linux_user }}"

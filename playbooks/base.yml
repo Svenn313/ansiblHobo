@@ -1,8 +1,9 @@
 ---
+- import_playbook: user.yml
+
 - name: Base configuration
   hosts: linux
   become: true
-
   tasks:
     - name: apt update
       ansible.builtin.apt:
@@ -54,7 +55,7 @@
 
     - name: Copy zshrc and p10k file
       ansible.builtin.copy:
-        src: "{{ project_root }}/files/{{ item.name }}"
+        src: "{{ files_dir }}/{{ item.name }}"
         dest: "/home/{{ linux_user }}/{{ item.name }}"
         mode: '0644'
         owner: "{{ linux_user }}"
@@ -94,7 +95,7 @@
 
     - name: Lowercasing XDG directories
       ansible.builtin.copy:
-        src: "{{ project_root }}/files/user-dirs.dirs"
-        dest: "/home/{{ linux_user}}/.config/user-dirs.dirs"
+        src: "{{ files_dir }}/user-dirs.dirs"
+        dest: "/home/{{ linux_user }}/.config/user-dirs.dirs"
         mode: '0644'
         owner: "{{ linux_user }}"

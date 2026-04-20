@@ -1,0 +1,49 @@
+---
+- name: User configuration
+  hosts: linux
+  become: true
+  vars:
+    users:
+      - name: sven
+        shell: /bin/zsh
+        groups: "sudo,docker"
+        key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJiwxiEmpPQsqwx8zvQXRxx0qpVyxdOcTQvIM+kz+/77"
+      
+      - name: discodino
+        shell: /bin/zsh
+        groups: sudo
+        key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFxeSzTYn/UgNDqix/UbNePgRZ8qyNE4kvziXHZGJ7V5"
+
+      - name: clementinator
+        shell: /bin/bash
+        groups: ""
+        key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO5DiONIoW4f0pURSk+6bq11x4h4+GN3pb/Q5uzpbQ+1"
+
+  tasks:
+    - name: Create users
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        shell: "{{ item.shell }}"
+        groups: "{{ item.groups }}"
+        create_home: yes
+      loop: "{{ users }}"
+
+    - name: Add SSH keys
+      ansible.posix.authorized_key:
+        user: "{{ item.name }}"
+        key: "{{ item.key }}"
+      loop: "{{ users }}"
+
+    - name: Copy SSH git key
+      ansible.builtin.copy:
+        src: "{{ files_dir }}/vault/git_keys.vault"
+        dest: "/home/{{ linux_user }}/.ssh/gitKey"
+        mode: '0600'
+        owner: "{{ linux_user }}"
+
+    - name: Copy git ssh config file
+      ansible.builtin.copy:
+        src: "{{ files_dir }}/sshConfig"
+        dest: "/home/{{ linux_user }}/.ssh/config"
+        mode: "0644"
+        owner: "{{ linux_user }}"

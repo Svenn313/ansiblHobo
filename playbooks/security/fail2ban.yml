@@ -12,7 +12,7 @@
     
     - name: Copy fail2ban configuration
       ansible.builtin.copy:
-        src: "{{ project_root }}/../files/jail.local"
+        src: "{{ files_dir }}/jail.local"
         dest: /etc/fail2ban/jail.conf
         mode: '0644'
         owner: root

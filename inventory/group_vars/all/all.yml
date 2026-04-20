@@ -6,4 +6,5 @@ linux_user: sven
 git_username: Sven
 git_email: sven313@protonmail.com
 
-project_root: "{{ playbook_dir }}/.."
+files_dir: "{{ inventory_dir }}/../files"
+
