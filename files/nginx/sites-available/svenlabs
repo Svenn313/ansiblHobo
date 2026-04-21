@@ -1,0 +1,17 @@
+server {
+	include snippets/security-headers.conf;
+    listen 443 ssl;
+    server_name svenlabs.fr;
+
+    # SSL Configuration
+    ssl_certificate /etc/letsencrypt/live/svenlabs.fr/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/svenlabs.fr/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # Default response
+    return 403;
+
+
+}
+

@@ -1,0 +1,19 @@
+server {
+	include snippets/security-headers.conf;
+    server_name signal.svenlabs.fr;
+    listen [::]:443 ssl;
+    listen 443 ssl;
+
+    # Configuration SSL
+    ssl_certificate /etc/letsencrypt/live/svenlabs.fr/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/svenlabs.fr/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:9090;
+        include /etc/nginx/proxy_params;
+    }
+
+
+}

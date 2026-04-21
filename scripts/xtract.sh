@@ -1,10 +1,7 @@
 #!/bin/bash
-# package_vault.sh
+# xtract.sh
 # Collecte les fichiers sensibles de cloudHobo, les empaquète en tarball
 # et chiffre le tout avec ansible-vault.
-#
-# Usage:
-#   ./package_vault.sh [--vault-password-file FILE]
 #
 # La tarball chiffrée est déposée dans :
 #   ~/git/ansiblHobo/files/vault/sensitive_configs.tar.gz.vault
@@ -66,7 +63,7 @@ command -v ansible-vault &>/dev/null || fail "ansible-vault non trouvé"
 mkdir -p "$STAGING" "$DEST_REPO"
 
 echo ""
-echo "📦 package_vault.sh"
+echo "📦 xtract.sh"
 echo "   Source      : $SRC"
 echo "   Destination : $OUTPUT"
 echo ""

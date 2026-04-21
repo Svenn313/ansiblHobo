@@ -1,0 +1,45 @@
+---
+- name: cron configuration
+  hosts: linux
+  become: true
+  tasks:
+
+    - name: touch cron log file
+      ansible.builtin.file:
+        path: /var/log/ansiblHobo.log
+        state: touch
+        mode: "0644"
+        owner: "{{ linux_user }}"
+
+    - name: cron, as root, that certbot renew every 12 hours
+      ansible.builtin.cron:
+        name: "certbot renew"
+        minute: "0"
+        hour: "*/12"
+        user: root
+        job: certbot renew --quiet
+
+    - name: cron that healthping check runs every 10 minutes
+      ansible.builtin.cron:
+        name: healthping check
+        minute: "*/10"
+        hour: "*"
+        user: "{{ linux_user }}"
+        job: curl -fsS -m 10 --retry 3 https://hc-ping.com/dd334bba-c425-4383-8bd0-dd6cf1899567 > /dev/null
+
+    - name: cron that copy nginx and letsencrypt mandatory files to ansible that runs every at 3 AM
+      ansible.builtin.cron:
+        name: copyNginx to ansiblHobo
+        minute: "0"
+        hour: "3"
+        user: "{{ linux_user }}"
+        job: ~/git/ansiblHobo/scripts/copyNginx.sh >> /var/log/ansiblHobo.log 2>&1
+
+    - name: cron that copy cloudHobo mandatory files to ansible that runs every at 3 AM
+      ansible.builtin.cron:
+        name: copy cloudHobo to ansiblHobo
+        minute: "0"
+        hour: "3"
+        user: "{{ linux_user }}"
+        job: ~/git/ansiblHobo/scripts/package_vault.sh >> /var/log/ansiblHobo.log 2>&1
+

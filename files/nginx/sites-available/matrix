@@ -1,0 +1,105 @@
+# ===============================
+# Matrix Synapse - Clients (HTTPS)
+# ===============================
+server {
+	include snippets/security-headers.conf;
+    server_name matrix.svenlabs.fr;
+
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+
+    client_max_body_size 200M;
+
+    # Certificats Let's Encrypt
+    ssl_certificate /etc/letsencrypt/live/svenlabs.fr/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/svenlabs.fr/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # ------------------------------
+    # Serve .well-known first
+    # ------------------------------
+    location /.well-known/matrix/ {
+        alias /home/sven/git/CloudHobo/Docker/Matrix/Volumes/well-known/matrix/;
+        index server;
+    }
+
+    # ------------------------------
+    # Proxy Synapse HTTP backend
+    # ------------------------------
+    location / {
+        proxy_pass http://127.0.0.1:6050;
+        proxy_http_version 1.1;
+
+        # WebSocket support
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Upgrade $http_upgrade;
+
+        # Forward headers
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_read_timeout 1d;
+    }
+}
+
+# ===============================
+# Matrix Synapse - Federation (8448)
+# ===============================
+server {
+	include snippets/security-headers.conf;
+    server_name matrix.svenlabs.fr;
+
+    listen 8448 ssl http2;
+    listen [::]:8448 ssl http2;
+
+    # Certificats Let's Encrypt
+    ssl_certificate /etc/letsencrypt/live/svenlabs.fr/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/svenlabs.fr/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:6051;
+        proxy_http_version 1.1;
+
+        # Forward headers
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_read_timeout 1d;
+    }
+}
+# =================================
+# Sticker Picker
+# =================================
+server {
+	include snippets/security-headers.conf;
+    server_name stickers.svenlabs.fr;
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    ssl_certificate /etc/letsencrypt/live/svenlabs.fr/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/svenlabs.fr/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    location / {
+    proxy_pass http://127.0.0.1:8083;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    add_header Access-Control-Allow-Origin *;
+    add_header X-Frame-Options "";
+    }
+}
+
+server {
+	include snippets/security-headers.conf;
+    server_name stickers.svenlabs.fr;
+    listen 80;
+    listen [::]:80;
+    return 301 https://$host$request_uri;
+}

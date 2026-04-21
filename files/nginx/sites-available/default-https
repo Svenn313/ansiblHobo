@@ -1,0 +1,13 @@
+server {
+	include snippets/security-headers.conf;
+    listen 443 ssl default_server;
+    listen [::]:443 ssl default_server;
+    server_name _;
+
+ssl_certificate /etc/letsencrypt/live/svenlabs.fr/fullchain.pem;
+ssl_certificate_key /etc/letsencrypt/live/svenlabs.fr/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    return 403;
+}

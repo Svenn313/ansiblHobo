@@ -1,0 +1,28 @@
+---
+- name: cloudHobo configuration and installation
+  hosts: linux
+  become: true
+  tasks:
+    - name: Clone cloudHobo repositories
+      ansible.builtin.git:
+        repo: "git@github.com:Svenn313/CloudHobo.git"
+        dest: "/tmp/cloudHobo"
+        key_file: "/home/{{ linux_user }}/.ssh/gitKey"
+      become_user: "{{ linux_user }}"
+
+    - name: Copy and decrypt tarball
+      ansible.builtin.copy:
+        src: "{{ files_dir }}/vault/sensitive_configs.tar.gz.vault"
+        dest: /tmp/sensitive_configs.tar.gz
+        decrypt: yes
+
+    - name: Extract tarball
+      ansible.builtin.unarchive:
+        src: /tmp/sensitive_configs.tar.gz
+        dest: /tmp/cloudHobo/
+        remote_src: yes
+    
+    - name: Delete tarball once extracted
+      ansible.builtin.file:
+        state: absent
+        path: /tmp/sensitive_configs.tar.gz

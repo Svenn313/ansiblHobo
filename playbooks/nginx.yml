@@ -1,0 +1,97 @@
+---
+- name: Nginx install and configuration
+  hosts: linux
+  become: true
+  tasks:
+    - name: apt update
+      ansible.builtin.apt:
+        name: "*"
+        update_cache: yes
+
+    - name: Packages install
+      ansible.builtin.apt:
+        name:
+          - nginx
+          - python3-certbot-dns-ovh
+          - certbot
+
+    - name: create mandatory folders for nginx
+      ansible.builtin.file:
+        path: "/etc/nginx/{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - snippets
+        - sites-available
+        - sites-enabled
+
+    - name: create mandatory folders for letsencrypt
+      ansible.builtin.file:
+        path: "/etc/letsencrypt/{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - ovh
+        - renewal
+        - archive
+        - live
+      
+    - name: Deploy OVH.ini file
+      ansible.builtin.copy:
+        src: "{{ files_dir }}/vault/ovh.ini"
+        dest: /etc/letsencrypt/ovh/ovh.ini
+        decrypt: yes
+
+    - name: Generate SSL certificate
+      ansible.builtin.command: >
+        certbot certonly
+        --dns-ovh
+        --dns-ovh-credentials /etc/letsencrypt/ovh/ovh.ini
+        -d svenlabs.fr
+        -d '*.svenlabs.fr'
+        --agree-tos
+        --no-eff-email
+        --email sven313@protonmail.com
+      args:
+        creates: /etc/letsencrypt/live/svenlabs.fr/fullchain.pem
+    
+    - name: Deploy renewal conf file
+      ansible.builtin.copy:
+        src: "{{ files_dir }}/vault/svenlabs.fr.conf"
+        dest: /etc/letsencrypt/renewal/svenlabs.fr.conf
+        decrypt: yes
+        
+    - name: Deploy nginx.conf file
+      ansible.builtin.copy:
+        src: "{{ files_dir }}/nginx/nginx.conf"
+        dest: /etc/nginx/nginx.conf
+
+    - name: Deploy security-headers file
+      ansible.builtin.copy:
+        src: "{{ files_dir }}/nginx/snippets/security-headers.conf"
+        dest: /etc/nginx/snippets/security-headers.conf
+
+    - name: Deploy sites-available files
+      ansible.builtin.copy:
+        src: "{{ files_dir }}/nginx/sites-available/"
+        dest: /etc/nginx/sites-available/
+
+    - name: Find all sites-available
+      ansible.builtin.find:
+        path: /etc/nginx/sites-available
+        file_type: file
+      register: find_result
+
+    - name: Create symlink from sites-availables to sites-enabled
+      ansible.builtin.file:
+        src: "/etc/nginx/sites-available/{{ item.path | basename }}"
+        dest: "/etc/nginx/sites-enabled/{{ item.path | basename }}"
+        state: link
+      with_items: "{{ find_result.files }}"
+      notify: Restart nginx
+
+  handlers:
+    - name: Restart nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted

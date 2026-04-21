@@ -1,0 +1,30 @@
+server {
+	include snippets/security-headers.conf;
+    server_name grafana.svenlabs.fr;
+    listen [::]:443 ssl;
+    listen 443 ssl;
+
+    # Configuration SSL
+ssl_certificate /etc/letsencrypt/live/svenlabs.fr/fullchain.pem;
+ssl_certificate_key /etc/letsencrypt/live/svenlabs.fr/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # Configuration du proxy
+    location / {
+        proxy_pass https://127.0.0.1:7030;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Host grafana.svenlabs.fr;  # S'assurer que le header Host est correct
+        proxy_read_timeout 1d;
+    }
+
+    # Optionnel: Refuser les connexions provenant d'IP non autorisées
+    # allow 127.0.0.1;
+    # allow ::1;
+    # deny all;
+}
+

@@ -1,0 +1,26 @@
+server {
+	include snippets/security-headers.conf;
+    server_name transmission.svenlabs.fr torrent.svenlabs.fr;
+    listen [::]:443 ssl;
+    listen 443 ssl;
+
+    # SSL Configuration
+    ssl_certificate /etc/letsencrypt/live/svenlabs.fr/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/svenlabs.fr/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:8050;
+        include /etc/nginx/proxy_params;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Host $host;
+        proxy_read_timeout 1d;
+    }
+
+
+
+
+}
+
