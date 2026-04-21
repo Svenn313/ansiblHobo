@@ -55,17 +55,9 @@ Le mot de passe vault est stocké dans `.vault_pass` à la racine du repo (gitig
 Collecte les fichiers important et/ou sensibles de `cloudHobo`,
 les archive et les chiffre avec `ansible-vault`. Lancé automatiquement par cron à 3h.
 
-```bash
-./scripts/package_vault.sh
-```
-
 ### `copyNginx.sh`
 Copie les configs nginx (`nginx.conf`, `sites-available/`, `snippets/`) vers `files/nginx/`.
 Lancé automatiquement par cron à 3h.
-
-```bash
-./scripts/copyNginx.sh
-```
 
 ## Crons déployés
 
