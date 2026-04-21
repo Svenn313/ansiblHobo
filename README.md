@@ -49,29 +49,10 @@ Les fichiers sensibles sont chiffrés avec `ansible-vault` et stockés dans `fil
 
 Le mot de passe vault est stocké dans `.vault_pass` à la racine du repo (gitignored).
 
-## Utilisation
-
-```bash
-# Configuration de base du serveur
-ansible-playbook -i inventory/inventory.ini playbooks/base.yml --vault-password-file .vault_pass
-
-# Nginx + SSL
-ansible-playbook -i inventory/inventory.ini playbooks/nginx.yml --vault-password-file .vault_pass
-
-# Déploiement des configs Docker
-ansible-playbook -i inventory/inventory.ini playbooks/docker/docker.yml --vault-password-file .vault_pass
-
-# Crons
-ansible-playbook -i inventory/inventory.ini playbooks/cron.yml --vault-password-file .vault_pass
-
-# Sécurité
-ansible-playbook -i inventory/inventory.ini playbooks/security/security.yml --vault-password-file .vault_pass
-```
-
 ## Scripts
 
-### `package_vault.sh`
-Collecte les fichiers sensibles de `cloudHobo` (configs, secrets, `.storage` Home Assistant),
+### `xtract.sh`
+Collecte les fichiers important et/ou sensibles de `cloudHobo`,
 les archive et les chiffre avec `ansible-vault`. Lancé automatiquement par cron à 3h.
 
 ```bash
