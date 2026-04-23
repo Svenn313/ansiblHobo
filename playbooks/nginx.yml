@@ -66,10 +66,10 @@
         src: "{{ files_dir }}/nginx/nginx.conf"
         dest: /etc/nginx/nginx.conf
 
-    - name: Deploy security-headers file
+    - name: Deploy snippets file
       ansible.builtin.copy:
-        src: "{{ files_dir }}/nginx/snippets/security-headers.conf"
-        dest: /etc/nginx/snippets/security-headers.conf
+        src: "{{ files_dir }}/nginx/snippets/"
+        dest: /etc/nginx/snippets/
 
     - name: Deploy sites-available files
       ansible.builtin.copy:

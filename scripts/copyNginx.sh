@@ -46,9 +46,12 @@ echo ""
 
 [[ $count -gt 0 ]] && ok "$count fichier(s) copié(s)" || warn "Aucun fichier dans sites-available"
 
-# ─── 3. security-headers.conf ────────────────────────────────────────────────
+# ─── 3. snippets ────────────────────────────────────────────────
 echo "" 
-echo "─── 3/3 security-headers.conf ────────────────────────────────────────"
+echo "─── 3/3 snippets.conf ────────────────────────────────────────"
 mkdir -p "$DEST/snippets"
 sudo cp /etc/nginx/snippets/security-headers.conf $DEST/snippets/security-headers.conf
+sudo cp /etc/nginx/snippets/proxy.conf $DEST/snippets/proxy.conf
+sudo cp /etc/nginx/snippets/tls.conf $DEST/snippets/tls.conf
+sudo cp /etc/nginx/snippets/ip-restrictions.conf $DEST/snippets/ip-restrictions.conf
 echo ""

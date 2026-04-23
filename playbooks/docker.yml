@@ -2,6 +2,8 @@
 - name: cloudHobo configuration and installation
   hosts: linux
   become: true
+  roles:
+    - geerlingguy.docker
   tasks:
     - name: Clone cloudHobo repositories
       ansible.builtin.git:

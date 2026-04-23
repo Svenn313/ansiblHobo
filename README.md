@@ -6,28 +6,36 @@ Projet Ansible pour la gestion et le déploiement de mon homeserver Linux (et à
 
 ```
 ansiblHobo/
+├── ansible.cfg
 ├── inventory/
-│   └── inventory.ini         # Hôtes cibles
-├── group_vars/
-│   └── all.yml               # Variables globales
+│   ├── inventory.ini
+│   └── group_vars/
+│       └── all/
+│           ├── all.yml           # Variables globales
+│           └── vault.yml         # Variables sensibles chiffrées
 ├── files/
-│   ├── nginx/                # Configs nginx (nginx.conf, sites-available, snippets)
-│   └── vault/                # Fichiers sensibles chiffrés (ansible-vault)
+│   ├── nginx/                    # Configs nginx (nginx.conf, sites-available, snippets)
+│   ├── vault/                    # Fichiers sensibles chiffrés (ansible-vault)
+│   ├── docker.sources.j2         # Template sources Docker
+│   ├── jail.local                # Config fail2ban
+│   ├── sshConfig                 # Config SSH déployée sur le serveur
+│   └── user-dirs.dirs            # Config répertoires XDG
 ├── playbooks/
-│   ├── base.yml              # Bootstrap complet (user + config de base)
-│   ├── user.yml              # Création des users, clés SSH
-│   ├── cron.yml              # Déploiement des crons
-│   ├── nginx.yml             # Installation et configuration nginx + certbot
+│   ├── base.yml                  # Bootstrap complet (user + config de base)
+│   ├── user.yml                  # Création des users, clés SSH
+│   ├── cron.yml                  # Déploiement des crons
+│   ├── nginx.yml                 # Installation et configuration nginx + certbot
 │   ├── docker/
-│   │   └── docker.yml        # Clone cloudHobo + déploiement des configs Docker
+│   │   ├── docker_install.yml    # Installation de Docker
+│   │   └── docker.yml            # Clone cloudHobo + déploiement des configs
 │   └── security/
-│       ├── security.yml      # Playbook de sécurité global
-│       ├── ssh.yml           # Hardening SSH
-│       ├── ufw.yml           # Pare-feu UFW
-│       └── fail2ban.yml      # Fail2ban
+│       ├── security.yml          # Playbook de sécurité global
+│       ├── ssh.yml               # Hardening SSH
+│       ├── ufw.yml               # Pare-feu UFW
+│       └── fail2ban.yml          # Fail2ban
 └── scripts/
-    ├── package_vault.sh      # Collecte et chiffre les configs sensibles de cloudHobo
-    └── copyNginx.sh          # Copie les configs nginx vers files/nginx/
+    ├── xtract.sh                 # Collecte et chiffre les configs sensibles de cloudHobo
+    └── copyNginx.sh              # Copie les configs nginx vers files/nginx/
 ```
 
 ## Prérequis
@@ -64,7 +72,7 @@ Lancé automatiquement par cron à 3h.
 | Fréquence | User | Commande |
 |---|---|---|
 | Toutes les 10 min | sven | Healthcheck ping (healthchecks.io) |
-| Tous les jours à 3h | sven | `package_vault.sh` |
+| Tous les jours à 3h | sven | `xtract.sh` |
 | Tous les jours à 3h | sven | `copyNginx.sh` |
 | Toutes les 12h | root | `certbot renew` |
 
