@@ -1,13 +1,7 @@
 server {
-	include snippets/security-headers.conf;
-    server_name pihole.svenlabs.fr;
-    listen 443 ssl;
-    listen [::]:443 ssl;
-
-    ssl_certificate /etc/letsencrypt/live/svenlabs.fr/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/svenlabs.fr/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+	  server_name pihole.svenlabs.fr;
+    include snippets/security-headers.conf;
+    include snippets/tls.conf;
 
     absolute_redirect off;
     proxy_redirect off;
@@ -18,11 +12,7 @@ server {
 
     location / {
         proxy_pass http://127.0.0.1:8081;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $remote_addr;
-        proxy_set_header X-Forwarded-Proto https;
+        include snippets/proxy.conf;
     }
 }
 

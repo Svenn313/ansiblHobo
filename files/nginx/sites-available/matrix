@@ -2,19 +2,17 @@
 # Matrix Synapse - Clients (HTTPS)
 # ===============================
 server {
-	include snippets/security-headers.conf;
     server_name matrix.svenlabs.fr;
+    include snippets/security-headers.conf;
 
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
-
-    client_max_body_size 200M;
-
-    # Certificats Let's Encrypt
     ssl_certificate /etc/letsencrypt/live/svenlabs.fr/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/svenlabs.fr/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    client_max_body_size 200M;
 
     # ------------------------------
     # Serve .well-known first
@@ -28,20 +26,8 @@ server {
     # Proxy Synapse HTTP backend
     # ------------------------------
     location / {
+        include snippets/proxy.conf;
         proxy_pass http://127.0.0.1:6050;
-        proxy_http_version 1.1;
-
-        # WebSocket support
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Upgrade $http_upgrade;
-
-        # Forward headers
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        proxy_read_timeout 1d;
     }
 }
 
@@ -49,55 +35,42 @@ server {
 # Matrix Synapse - Federation (8448)
 # ===============================
 server {
-	include snippets/security-headers.conf;
     server_name matrix.svenlabs.fr;
+    include snippets/security-headers.conf;
+    
+    ssl_certificate /etc/letsencrypt/live/svenlabs.fr/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/svenlabs.fr/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
     listen 8448 ssl http2;
     listen [::]:8448 ssl http2;
 
-    # Certificats Let's Encrypt
-    ssl_certificate /etc/letsencrypt/live/svenlabs.fr/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/svenlabs.fr/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-
     location / {
+        include snippets/proxy.conf;
+        proxy_set_header Connection "";  # pas de WebSocket pour la fédération
         proxy_pass http://127.0.0.1:6051;
-        proxy_http_version 1.1;
-
-        # Forward headers
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        proxy_read_timeout 1d;
     }
 }
-# =================================
+
+# ===============================
 # Sticker Picker
-# =================================
+# ===============================
 server {
-	include snippets/security-headers.conf;
+    include snippets/security-headers.conf;
+    include snippets/tls.conf;
+
     server_name stickers.svenlabs.fr;
-    listen 443 ssl;
-    listen [::]:443 ssl;
-    ssl_certificate /etc/letsencrypt/live/svenlabs.fr/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/svenlabs.fr/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
     location / {
-    proxy_pass http://127.0.0.1:8083;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    add_header Access-Control-Allow-Origin *;
-    add_header X-Frame-Options "";
+        include snippets/proxy.conf;
+        proxy_pass http://127.0.0.1:8083;
+        add_header Access-Control-Allow-Origin *;
+        add_header X-Frame-Options "";
     }
 }
 
 server {
-	include snippets/security-headers.conf;
     server_name stickers.svenlabs.fr;
     listen 80;
     listen [::]:80;
