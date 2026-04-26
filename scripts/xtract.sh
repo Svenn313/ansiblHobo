@@ -22,7 +22,7 @@ trap 'rm -rf "$WORK_DIR"' EXIT
 
 # ─── Vault password file ─────────────────────────────────────────────────────
 VAULT_PASSWORD_FILE="${HOME}/git/ansiblHobo/.vault_pass"
-VAULT_ARGS=(--vault-password-file "$VAULT_PASSWORD_FILE")
+VAULT_ARGS=()
 
 [[ -f "$VAULT_PASSWORD_FILE" ]] || fail "Vault password file introuvable : $VAULT_PASSWORD_FILE"
 
@@ -104,13 +104,28 @@ done < <(find "$SRC" -type f \( \
 # ─── 3. HOME ASSISTANT .storage ──────────────────────────────────────────────
 echo ""
 echo "── 3/4  Home Assistant .storage ───────────────────────────────────────"
-if [[ -d "$SRC/homeassistant/volumes/.storage" ]]; then
+if [[ -d "$SRC/homeassistant/volumes" ]]; then
     while IFS= read -r file; do
         copy_file "$file"
-    done < <(find "$SRC/homeassistant/volumes/.storage" -type f 2>/dev/null)
+    done < <(find "$SRC/homeassistant/volumes" -type f 2>/dev/null)
 else
-    warn ".storage introuvable, ignoré"
+    warn "volumes HA introuvable, ignoré"
 fi
+
+# ─── 3.5 POSTGRES DUMP ───────────────────────────────────────────────────────
+echo ""
+echo "── 3.5/4  Dump PostgreSQL ─────────────────────────────────────────────"
+PG_DUMP_DIR="$STAGING/postgres_dumps"
+mkdir -p "$PG_DUMP_DIR"
+
+for db in synapse mealie joplin mautrix_signal mautrix_telegram mautrix_whatsapp f1data; do
+    if docker exec postgres pg_dump -U postgres "$db" > "$PG_DUMP_DIR/${db}.sql" 2>/dev/null; then
+        log "Dump: $db ($(du -sh "$PG_DUMP_DIR/${db}.sql" | cut -f1))"
+    else
+        warn "Échec dump: $db"
+    fi
+done
+
 
 # ─── 4. PACKAGING + VAULT ────────────────────────────────────────────────────
 echo ""
