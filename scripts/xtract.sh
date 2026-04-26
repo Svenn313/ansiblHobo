@@ -83,7 +83,8 @@ done < <(find "$SRC" -type f \( \
     -name "*.toml" -o \
     -name "*.ini"  -o \
     -name "*.env"  \
-\) ! -path "*/__pycache__/*" 2>/dev/null)
+\)  ! -path "*/prowlarr/volumes/Definitions/*" \
+    ! -path "*/__pycache__/*" 2>/dev/null)
 
 # ─── 2. SECRETS EXPLICITES ───────────────────────────────────────────────────
 echo ""
@@ -101,13 +102,21 @@ done < <(find "$SRC" -type f \( \
     -name "*.p12"     \
 \) 2>/dev/null)
 
-# ─── 3. HOME ASSISTANT .storage ──────────────────────────────────────────────
+# ─── 3. HOME ASSISTANT volumes ───────────────────────────────────────────────
 echo ""
-echo "── 3/4  Home Assistant .storage ───────────────────────────────────────"
+echo "── 3/4  Home Assistant volumes ────────────────────────────────────────"
 if [[ -d "$SRC/homeassistant/volumes" ]]; then
     while IFS= read -r file; do
         copy_file "$file"
-    done < <(find "$SRC/homeassistant/volumes" -type f 2>/dev/null)
+    done < <(find "$SRC/homeassistant/volumes" -type f \
+        ! -path "*/custom_components/*" \
+        ! -path "*/www/*" \
+        ! -path "*/deps/*" \
+        ! -path "*/tts/*" \
+        ! -name "*.db-wal" \
+        ! -name "*.db-shm" \
+        ! -name "*.log*" \
+        2>/dev/null)
 else
     warn "volumes HA introuvable, ignoré"
 fi
@@ -123,6 +132,30 @@ for db in synapse mealie joplin mautrix_signal mautrix_telegram mautrix_whatsapp
         log "Dump: $db ($(du -sh "$PG_DUMP_DIR/${db}.sql" | cut -f1))"
     else
         warn "Échec dump: $db"
+    fi
+done
+
+# ─── 3.7 SQLITE DUMPS ────────────────────────────────────────────────────────
+echo ""
+echo "── 3.7/4  Dump SQLite ─────────────────────────────────────────────────"
+SQLITE_DUMP_DIR="$STAGING/sqlite_dumps"
+mkdir -p "$SQLITE_DUMP_DIR"
+
+declare -A SQLITE_DBS=(
+    ["prowlarr"]="$SRC/prowlarr/volumes/prowlarr.db"
+    ["sonarr"]="$SRC/sonarr/volumes/sonarr.db"
+    ["radarr"]="$SRC/radarr/volumes/radarr.db"
+    ["jellyfin"]="$SRC/jellyfin/config/data/data/jellyfin.db"
+)
+
+for name in "${!SQLITE_DBS[@]}"; do
+    db="${SQLITE_DBS[$name]}"
+    if [[ -f "$db" ]]; then
+        sqlite3 "$db" ".dump" > "$SQLITE_DUMP_DIR/${name}.sql" 2>/dev/null && \
+            log "Dump SQLite: $name ($(du -sh "$SQLITE_DUMP_DIR/${name}.sql" | cut -f1))" || \
+            warn "Échec dump SQLite: $name"
+    else
+        warn "Introuvable: $db"
     fi
 done
 
