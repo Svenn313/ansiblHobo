@@ -8,6 +8,8 @@
 #
 set -euo pipefail
 
+SECONDS=0
+
 # ─── Chemins ──────────────────────────────────────────────────────────────────
 BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
 SRC="$HOME/git/cloudHobo"
@@ -23,18 +25,19 @@ trap 'rm -rf "$WORK_DIR"' EXIT
 # ─── Vault password file ─────────────────────────────────────────────────────
 VAULT_PASSWORD_FILE="${HOME}/git/ansiblHobo/.vault_pass"
 VAULT_ARGS=()
-
-[[ -f "$VAULT_PASSWORD_FILE" ]] || fail "Vault password file introuvable : $VAULT_PASSWORD_FILE"
+if [[ -f "$VAULT_PASSWORD_FILE" ]]; then
+    VAULT_ARGS=(--vault-password-file "$VAULT_PASSWORD_FILE")
+fi
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
-log()  { echo "  $*"; }
-ok()   { echo "✅ $*"; }
-warn() { echo "⚠️  $*"; }
-fail() { echo "❌ $*" >&2; exit 1; }
+log()     { echo "  $*"; }
+ok()      { echo "  ✅ $*"; }
+warn()    { echo "  ⚠️  $*"; }
+fail()    { echo "  ❌ $*" >&2; exit 1; }
+section() { echo ""; echo "── $*"; }
 
 is_docker_compose() {
     local file="$1"
-    # Un docker-compose contient "services:" au niveau racine
     grep -qE "^\s*services\s*:" "$file" 2>/dev/null
 }
 
@@ -69,9 +72,8 @@ echo "   Destination : $OUTPUT"
 echo ""
 
 # ─── 1. CONFIGS (hors docker-compose) ────────────────────────────────────────
-echo "── 1/4  Collecte des configs ──────────────────────────────────────────"
+section "1/5  Collecte des configs ───────────────────────────────────────────"
 while IFS= read -r file; do
-    # Exclure les docker-compose yml
     if [[ "$file" == *.yml || "$file" == *.yaml ]]; then
         is_docker_compose "$file" && continue
     fi
@@ -87,8 +89,7 @@ done < <(find "$SRC" -type f \( \
     ! -path "*/__pycache__/*" 2>/dev/null)
 
 # ─── 2. SECRETS EXPLICITES ───────────────────────────────────────────────────
-echo ""
-echo "── 2/4  Collecte des secrets explicites ───────────────────────────────"
+section "2/5  Collecte des secrets explicites ────────────────────────────────"
 while IFS= read -r file; do
     copy_file "$file"
 done < <(find "$SRC" -type f \( \
@@ -103,8 +104,7 @@ done < <(find "$SRC" -type f \( \
 \) 2>/dev/null)
 
 # ─── 3. HOME ASSISTANT volumes ───────────────────────────────────────────────
-echo ""
-echo "── 3/4  Home Assistant volumes ────────────────────────────────────────"
+section "3/5  Home Assistant volumes ─────────────────────────────────────────"
 if [[ -d "$SRC/homeassistant/volumes" ]]; then
     while IFS= read -r file; do
         copy_file "$file"
@@ -122,8 +122,7 @@ else
 fi
 
 # ─── 3.5 POSTGRES DUMP ───────────────────────────────────────────────────────
-echo ""
-echo "── 3.5/4  Dump PostgreSQL ─────────────────────────────────────────────"
+section "3.5/5  Dump PostgreSQL ──────────────────────────────────────────────"
 PG_DUMP_DIR="$STAGING/postgres_dumps"
 mkdir -p "$PG_DUMP_DIR"
 
@@ -136,8 +135,7 @@ for db in synapse mealie joplin mautrix_signal mautrix_telegram mautrix_whatsapp
 done
 
 # ─── 3.7 SQLITE DUMPS ────────────────────────────────────────────────────────
-echo ""
-echo "── 3.7/4  Dump SQLite ─────────────────────────────────────────────────"
+section "3.7/5  Dump SQLite ──────────────────────────────────────────────────"
 SQLITE_DUMP_DIR="$STAGING/sqlite_dumps"
 mkdir -p "$SQLITE_DUMP_DIR"
 
@@ -159,21 +157,32 @@ for name in "${!SQLITE_DBS[@]}"; do
     fi
 done
 
-
 # ─── 4. PACKAGING + VAULT ────────────────────────────────────────────────────
-echo ""
-echo "── 4/4  Packaging & chiffrement ───────────────────────────────────────"
+section "4/5  Packaging & chiffrement ────────────────────────────────────────"
 
 file_count=$(find "$STAGING" -type f | wc -l)
 [[ "$file_count" -gt 0 ]] || fail "Aucun fichier collecté, abandon."
 log "$file_count fichier(s) collecté(s)"
 
-# Tarball
 tar -czf "$TARBALL" -C "$STAGING" .
 log "Tarball créée : $(du -sh "$TARBALL" | cut -f1)"
 
-# Chiffrement
+log "Chiffrement en cours..."
 ansible-vault encrypt "${VAULT_ARGS[@]}" --output "$OUTPUT" "$TARBALL"
 
 ok "Tarball chiffrée : $OUTPUT"
+
+# ─── 5. GIT PUSH ─────────────────────────────────────────────────────────────
+section "5/5  Git push ────────────────────────────────────────────────────────"
+
+COMMIT_MSG="Auto commit -- vault file : $(date '+%Y-%m-%d %H:%M:%S')"
+cd "$HOME/git/ansiblHobo"
+git add "$OUTPUT"
+git commit --no-gpg-sign -m "$COMMIT_MSG" 2>&1 | while IFS= read -r line; do log "$line"; done
+GIT_SSH_COMMAND="ssh -i ~/.ssh/cronKey -o IdentitiesOnly=yes" git push 2>&1 | while IFS= read -r line; do log "$line"; done
+
+ok "Push OK → origin/main"
+
+echo ""
+echo "  Durée totale : ${SECONDS}s"
 echo ""
