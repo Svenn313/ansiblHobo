@@ -9,6 +9,7 @@
 set -euo pipefail
 
 SECONDS=0
+SCRIPT_FAILED=0
 
 # ─── Chemins ──────────────────────────────────────────────────────────────────
 BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -19,8 +20,18 @@ STAGING="$WORK_DIR/staging"
 TARBALL="$WORK_DIR/sensitive_configs.tar.gz"
 OUTPUT="$DEST_REPO/sensitive_configs.tar.gz.vault"
 
-# ─── Nettoyage automatique ────────────────────────────────────────────────────
-trap 'rm -rf "$WORK_DIR"' EXIT
+# ─── Nettoyage automatique + notification Matrix sur erreur ───────────────────
+trap 'SCRIPT_FAILED=1' ERR
+trap 'rm -rf "$WORK_DIR"
+      if [[ $SCRIPT_FAILED -eq 1 ]] && [[ -f ~/.matrix_notify ]]; then
+          source ~/.matrix_notify
+          curl -sf -X PUT \
+              "https://matrix.svenlabs.fr/_matrix/client/v3/rooms/${MATRIX_ROOM}/send/m.room.message/${$}_$(date +%s)" \
+              -H "Authorization: Bearer ${MATRIX_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{\"msgtype\":\"m.text\",\"body\":\"❌ xtract.sh a échoué sur $(hostname) — $(date +%Y-%m-%dT%H:%M)\"}" \
+              > /dev/null 2>&1 || true
+      fi' EXIT
 
 # ─── Vault password file ─────────────────────────────────────────────────────
 VAULT_PASSWORD_FILE="${HOME}/git/ansiblHobo/.vault_pass"

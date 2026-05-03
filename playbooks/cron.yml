@@ -35,11 +35,18 @@
         user: "{{ linux_user }}"
         job: ~/git/ansiblHobo/scripts/copyNginx.sh >> /var/log/ansiblHobo.log 2>&1
 
+    - name: deploy matrix notify credentials
+      ansible.builtin.template:
+        src: "{{ files_dir }}/matrix_notify.j2"
+        dest: "/home/{{ linux_user }}/.matrix_notify"
+        owner: "{{ linux_user }}"
+        mode: "0600"
+
     - name: cron that copy cloudHobo mandatory files to ansible that runs every at 3 AM
       ansible.builtin.cron:
         name: copy cloudHobo to ansiblHobo
         minute: "0"
         hour: "3"
         user: "{{ linux_user }}"
-        job: ~/git/ansiblHobo/scripts/package_vault.sh >> /var/log/ansiblHobo.log 2>&1
+        job: ~/git/ansiblHobo/scripts/xtract.sh >> /var/log/ansiblHobo.log 2>&1
 
