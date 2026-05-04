@@ -34,12 +34,18 @@
         key: "{{ item.key }}"
       loop: "{{ users }}"
 
-    - name: Copy SSH git key
+    - name: Copy SSH keys
       ansible.builtin.copy:
-        src: "{{ files_dir }}/vault/git_keys.vault"
-        dest: "/home/{{ linux_user }}/.ssh/gitKey"
+        src: "{{ files_dir }}/vault/{{ item.src }}"
+        dest: "/home/{{ linux_user }}/.ssh/{{ item.dest }}"
         mode: '0600'
         owner: "{{ linux_user }}"
+      loop:
+        - { src: git_keys.vault,       dest: gitKey }
+        - { src: svenKey.vault,        dest: svenKey }
+        - { src: cloudhoboKey.vault,   dest: cloudhoboKey }
+        - { src: cronKey.vault,        dest: cronKey }
+        - { src: id_svenScaleway.vault, dest: id_svenScaleway }
 
     - name: Copy git ssh config file
       ansible.builtin.copy:

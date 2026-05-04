@@ -29,6 +29,9 @@ source /usr/share/doc/fzf/examples/key-bindings.zsh
 export EDITOR=nvim
 export VISUAL=nvim
 
+#GPG
+export GPG_TTY=$(tty)
+
 # fzf
 export FZF_DEFAULT_COMMAND='rg --files --hidden --follow --glob "!.git"'
 export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'

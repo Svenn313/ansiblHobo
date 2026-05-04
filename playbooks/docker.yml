@@ -9,7 +9,7 @@
       ansible.builtin.git:
         repo: "git@github.com:Svenn313/CloudHobo.git"
         dest: "/tmp/cloudHobo"
-        key_file: "/home/{{ linux_user }}/.ssh/gitKey"
+        key_file: "/home/{{ linux_user }}/.ssh/cloudhoboKey"
       become_user: "{{ linux_user }}"
 
     - name: Copy and decrypt tarball
