@@ -12,12 +12,13 @@
       - name: discodino
         shell: /bin/zsh
         groups: sudo
+        uid: 1002
         key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFxeSzTYn/UgNDqix/UbNePgRZ8qyNE4kvziXHZGJ7V5"
 
       - name: clementinator
         shell: /bin/bash
         groups: ""
-        key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO5DiONIoW4f0pURSk+6bq11x4h4+GN3pb/Q5uzpbQ+1"
+        key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEFENkMerjKrdKLeixyaa4/9808/PCdhfWMtiifnMq4l clement@cbouvet.fr"
 
   tasks:
     - name: Create users
