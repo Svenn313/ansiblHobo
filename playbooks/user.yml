@@ -7,16 +7,18 @@
       - name: sven
         shell: /bin/zsh
         groups: "sudo,docker"
+        uid: 1000
         key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJiwxiEmpPQsqwx8zvQXRxx0qpVyxdOcTQvIM+kz+/77"
       
       - name: discodino
         shell: /bin/zsh
         groups: sudo
-        uid: 1002
+        uid: 1003
         key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFxeSzTYn/UgNDqix/UbNePgRZ8qyNE4kvziXHZGJ7V5"
 
       - name: clementinator
         shell: /bin/bash
+        uid: 1004
         groups: ""
         key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEFENkMerjKrdKLeixyaa4/9808/PCdhfWMtiifnMq4l clement@cbouvet.fr"
 
@@ -26,6 +28,7 @@
         name: "{{ item.name }}"
         shell: "{{ item.shell }}"
         groups: "{{ item.groups }}"
+        uid: "{{ item.uid }}"
         create_home: yes
       loop: "{{ users }}"
 
