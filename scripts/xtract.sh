@@ -36,9 +36,6 @@ trap 'rm -rf "$WORK_DIR"
 # ─── Vault password file ─────────────────────────────────────────────────────
 VAULT_PASSWORD_FILE="${HOME}/git/ansiblHobo/.vault_pass"
 VAULT_ARGS=()
-if [[ -f "$VAULT_PASSWORD_FILE" ]]; then
-    VAULT_ARGS=(--vault-password-file "$VAULT_PASSWORD_FILE")
-fi
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 log()     { echo "  $*"; }
