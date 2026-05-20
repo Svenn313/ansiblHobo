@@ -51,6 +51,36 @@ zstyle ':omz:plugins:alias-finder' longer yes
 zstyle ':omz:plugins:alias-finder' exact yes
 zstyle ':omz:plugins:alias-finder' cheaper yes
 
+# Alias system healthcheck
+syscheck() {
+  local cpu=$(top -bn1 | grep "Cpu(s)" | awk '{print 100-$8}')
+  local load=$(cut -d' ' -f1-3 /proc/loadavg | tr ' ' '/')
+  local mem=$(free -h | awk '/^Mem:/{printf "%s/%s", $3, $2}')
+  local swap=$(free -h | awk '/^Swap:/{printf "%s/%s", $3, $2}')
+  local disk=$(df -h / | awk 'NR==2{printf "%s/%s (%s)", $3, $2, $5}')
+
+  # Réseau : mesure sur 1 seconde
+  local iface=$(ip route get 1.1.1.1 | awk '{print $5; exit}')
+  local rx1=$(cat /proc/net/dev | awk -v i="$iface:" '$1==i {print $2}')
+  local tx1=$(cat /proc/net/dev | awk -v i="$iface:" '$1==i {print $10}')
+  sleep 1
+  local rx2=$(cat /proc/net/dev | awk -v i="$iface:" '$1==i {print $2}')
+  local tx2=$(cat /proc/net/dev | awk -v i="$iface:" '$1==i {print $10}')
+  local rxs=$(awk "BEGIN {printf \"%.1f\", ($rx2 - $rx1) / 1048576}")
+  local txs=$(awk "BEGIN {printf \"%.1f\", ($tx2 - $tx1) / 1048576}")
+
+  echo ""
+  echo "  $(hostname)  —  $(date '+%H:%M:%S')"
+  echo "  ─────────────────────────────"
+  echo "  CPU   ${cpu}%   load ${load}"
+  echo "  RAM   ${mem}   swap ${swap}"
+  echo "  /     ${disk}"
+  echo "  NET   ${iface}   ↓ ${rxs} MB/s   ↑ ${txs} MB/s"
+  echo ""
+  df -h | awk 'NR>1 && !/tmpfs|udev|loop|efi/ && $6!="/" {printf "  %-6s %s/%s (%s)\n", $6, $3, $2, $5}'
+  echo ""
+}
+
 # PATH
 export PATH="/opt/speedtest:$PATH"
 export PATH="$HOME/.local/bin:$PATH"
