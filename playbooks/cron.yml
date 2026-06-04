@@ -50,3 +50,11 @@
         user: "{{ linux_user }}"
         job: ~/git/ansiblHobo/scripts/xtract.sh >> /var/log/ansiblHobo.log 2>&1
 
+    - name: cron backup restic at 4 AM
+      ansible.builtin.cron:
+        name: "backup restic"
+        minute: "0"
+        hour: "4"
+        user: root
+        job: "/home/{{ linux_user }}/git/cloudHobo/backup.sh >> /var/log/backup-restic.log 2>&1"
+

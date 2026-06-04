@@ -1,0 +1,45 @@
+#!/bin/bash
+set -euo pipefail
+cd ~/git/cloudHobo
+
+# ─── Config ───────────────────────────────────────────────────────────────────
+RESTIC_REPO="{{ restic_repo }}" #See vault
+RESTIC_PASSWORD_FILE="/etc/restic-password"
+
+# ─────────────────────────────────────────────────────────────────────────────
+
+log()  { echo "  [$(date '+%H:%M:%S')] $*"; }
+
+echo ""
+echo "🔒 backup.sh — $(date)"
+echo ""
+
+# ─── 1. DUMP PostgreSQL ───────────────────────────────────────────────────────
+log "Dump PostgreSQL"
+mkdir -p postgres/dumps
+docker exec postgres pg_dumpall -U postgres > postgres/dumps/all.sql
+
+# ─── 2. BACKUP RESTIC ─────────────────────────────────────────────────────────
+log "Backup restic..."
+restic -r "$RESTIC_REPO" \
+  --password-file "$RESTIC_PASSWORD_FILE" \
+  backup . \
+  --exclude ./arr_stack \
+  --exclude ./.git
+
+# ─── 3. CLEANING ─────────────────────────────────────────────────────────────
+log "Cleaning"
+rm -f postgres/dumps/all.sql
+
+# ─── 4. PURGE ─────────────────────────────────────────────────────────────────
+log "Purge old saves"
+restic -r "$RESTIC_REPO" \
+  --password-file "$RESTIC_PASSWORD_FILE" \
+  forget --prune \
+  --keep-daily 7 \
+  --keep-weekly 4 \
+  --keep-monthly 6
+
+echo ""
+log "✅ Backup done"
+echo ""

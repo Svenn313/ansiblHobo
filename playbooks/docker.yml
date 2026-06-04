@@ -28,3 +28,15 @@
       ansible.builtin.file:
         state: absent
         path: /tmp/sensitive_configs.tar.gz
+
+    - name: Delete tmp once finished
+      ansible.builtin.file:
+        state: absent
+        path: /tmp/cloudHobo/
+
+    - name: Deploy backup restic script
+      ansible.builtin.template:
+        src: "/home/{{ linux_user }}/git/ansiblHobo/scripts/restic.sh.j2"
+        dest: "/home/{{ linux_user }}/git/cloudHobo/backup.sh"
+        owner: "{{ linux_user }}"
+        mode: "0755"
