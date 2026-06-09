@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-cd ~/git/cloudHobo
+cd /home/sven/git/cloudHobo
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 RESTIC_REPO="{{ restic_repo }}" #See vault
@@ -23,6 +23,7 @@ docker exec postgres pg_dumpall -U postgres > postgres/dumps/all.sql
 log "Backup restic..."
 restic -r "$RESTIC_REPO" \
   --password-file "$RESTIC_PASSWORD_FILE" \
+  -o sftp.args="-i /home/sven/.ssh/resticBackup -o StrictHostKeyChecking=no -p 22" \
   backup . \
   --exclude ./arr_stack \
   --exclude ./.git
@@ -35,6 +36,7 @@ rm -f postgres/dumps/all.sql
 log "Purge old saves"
 restic -r "$RESTIC_REPO" \
   --password-file "$RESTIC_PASSWORD_FILE" \
+  -o sftp.args="-i /home/sven/.ssh/resticBackup -o StrictHostKeyChecking=no -p 22" \
   forget --prune \
   --keep-daily 7 \
   --keep-weekly 4 \

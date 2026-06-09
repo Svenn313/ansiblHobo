@@ -20,7 +20,7 @@
         shell: /bin/bash
         uid: 1004
         groups: ""
-        key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEFENkMerjKrdKLeixyaa4/9808/PCdhfWMtiifnMq4l clement@cbouvet.fr"
+        key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKPMR+gUHvK4tYhw3aNA+g+HwoYVZI6Yg/O6KWSL3BXe cardno:000F_A5688DD4"
 
   tasks:
     - name: Create users
