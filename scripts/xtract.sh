@@ -21,21 +21,32 @@ TARBALL="$WORK_DIR/sensitive_configs.tar.gz"
 OUTPUT="$DEST_REPO/sensitive_configs.tar.gz.vault"
 
 # ─── Nettoyage automatique + notification Matrix sur erreur ───────────────────
-trap 'SCRIPT_FAILED=1' ERR
+
+SCRIPT_ERROR_MSG=""
+
+trap 'SCRIPT_FAILED=1; SCRIPT_ERROR_MSG="Ligne $LINENO : $(eval echo \"\$BASH_COMMAND\")"' ERR
+
 trap 'rm -rf "$WORK_DIR"
-      if [[ $SCRIPT_FAILED -eq 1 ]] && [[ -f ~/.matrix_notify ]]; then
-          source ~/.matrix_notify
+      if [[ $SCRIPT_FAILED -eq 1 ]] && [[ -f /home/sven/.matrix_notify_ansiblhobo ]]; then
+          source /home/sven/.matrix_notify_ansiblhobo
           curl -sf -X PUT \
               "https://matrix.svenlabs.fr/_matrix/client/v3/rooms/${MATRIX_ROOM}/send/m.room.message/${$}_$(date +%s)" \
               -H "Authorization: Bearer ${MATRIX_TOKEN}" \
               -H "Content-Type: application/json" \
-              -d "{\"msgtype\":\"m.text\",\"body\":\"❌ xtract.sh a échoué sur $(hostname) — $(date +%Y-%m-%dT%H:%M)\"}" \
+              -d "{\"msgtype\":\"m.text\",\"body\":\"❌ xtract.sh a échoué sur $(hostname) — $(date +%Y-%m-%dT%H:%M)\n🔍 ${SCRIPT_ERROR_MSG}\"}" \
               > /dev/null 2>&1 || true
       fi' EXIT
 
 # ─── Vault password file ─────────────────────────────────────────────────────
 VAULT_PASSWORD_FILE="${HOME}/git/ansiblHobo/.vault_pass"
+
 VAULT_ARGS=()
+
+if [[ -f "$VAULT_PASSWORD_FILE" ]]; then
+    VAULT_ARGS=("--vault-password-file" "$VAULT_PASSWORD_FILE")
+else
+    fail "Vault password file introuvable : $VAULT_PASSWORD_FILE"
+fi
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 log()     { echo "  $*"; }
@@ -48,7 +59,6 @@ is_docker_compose() {
     local file="$1"
     grep -qE "^\s*services\s*:" "$file" 2>/dev/null
 }
-
 copy_file() {
     local src="$1"
     local dest="$STAGING/${src#$SRC/}"
