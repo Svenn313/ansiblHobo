@@ -6,9 +6,26 @@ cd /home/sven/git/cloudHobo
 RESTIC_REPO="{{ restic_repo }}" #See vault
 RESTIC_PASSWORD_FILE="/etc/restic-password"
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─── Matrix Notify ────────────────────────────────────────────────────────────
+
+SCRIPT_FAILED=0
+SCRIPT_ERROR_MSG=""
+
+trap 'SCRIPT_FAILED=1; SCRIPT_ERROR_MSG="Ligne $LINENO : $(eval echo \"\$BASH_COMMAND\")"' ERR
+
+trap 'if [[ $SCRIPT_FAILED -eq 1 ]] && [[ -f ~/.matrix_notify_restic ]]; then
+          source ~/.matrix_notify_restic
+          curl -sf -X PUT \
+              "https://matrix.svenlabs.fr/_matrix/client/v3/rooms/${MATRIX_ROOM}/send/m.room.message/${$}_$(date +%s)" \
+              -H "Authorization: Bearer ${MATRIX_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{\"msgtype\":\"m.text\",\"body\":\"❌ restic.sh a échoué sur $(hostname) — $(date +%Y-%m-%dT%H:%M)\n🔍 ${SCRIPT_ERROR_MSG}\"}" \
+              > /dev/null 2>&1 || true
+      fi' EXIT
 
 log()  { echo "  [$(date '+%H:%M:%S')] $*"; }
+
+# ──────────────────────────────────────────────────────────────────────────────
 
 echo ""
 echo "🔒 backup.sh — $(date)"
