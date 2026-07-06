@@ -1,0 +1,9 @@
+server {
+    server_name beszel.svenlabs.fr;
+    include snippets/security-headers.conf;
+    include snippets/tls.conf;
+    location / {
+      proxy_pass http://127.0.0.1:9091;
+      include snippets/proxy.conf;
+    }
+}
