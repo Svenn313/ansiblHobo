@@ -1,0 +1,7 @@
+---
+- ansible.builtin.import_tasks: ssh.yml
+  tags: ssh
+- ansible.builtin.import_tasks: ufw.yml
+  tags: ufw
+- ansible.builtin.import_tasks: fail2ban.yml
+  tags: fail2ban

@@ -1,0 +1,85 @@
+---
+- name: Install UFW
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+
+- name: Reset UFW actual configuration
+  community.general.ufw:
+    state: reset
+
+- name: LIMIT SSH
+  community.general.ufw:
+    rule: limit
+    port: "{{ ssh_port }}"
+    proto: tcp
+
+- name: Allow the SSH port used by this run (fresh install on port 22)
+  community.general.ufw:
+    rule: allow
+    port: "{{ ansible_port | default(ssh_port) }}"
+    proto: tcp
+  when: (ansible_port | default(ssh_port)) | int != ssh_port | int
+
+- name: Deny routed and incoming
+  community.general.ufw:
+    state: enabled
+    direction: "{{ item }}"
+    policy: deny
+  loop:
+    - routed
+    - incoming
+
+- name: Allow outgoing
+  community.general.ufw:
+    state: enabled
+    direction: outgoing
+    policy: allow
+
+- name: Allow TCP public ports
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop: "{{ security_ufw_public_tcp_ports }}"
+
+- name: Allow DNS
+  community.general.ufw:
+    rule: allow
+    port: 53
+    proto: any
+    src: "{{ item }}"
+  loop: "{{ security_ufw_dns_sources }}"
+
+- name: Public rules
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+  loop: "{{ security_ufw_public_rules }}"
+
+- name: Home Assistant Rules
+  community.general.ufw:
+    rule: allow
+    port: 8123
+    proto: tcp
+    src: "{{ security_lan }}"
+
+- name: DHCP Rules
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+  loop: "{{ security_ufw_dhcp_rules }}"
+
+- name: Allow all LAN
+  community.general.ufw:
+    rule: allow
+    src: "{{ security_lan }}"
+
+- name: Allow DHCP out
+  community.general.ufw:
+    rule: allow
+    port: "68"
+    proto: udp
+    direction: out

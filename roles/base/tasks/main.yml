@@ -1,0 +1,76 @@
+---
+- name: apt update
+  ansible.builtin.apt:
+    name: "*"
+    update_cache: yes
+
+- name: apt upgrade
+  ansible.builtin.apt:
+    upgrade: yes
+
+- name: Packages install
+  ansible.builtin.apt:
+    name: "{{ base_packages }}"
+    state: present
+
+- name: zsh as default shell
+  ansible.builtin.user:
+    name: "{{ linux_user }}"
+    shell: /bin/zsh
+
+- name: install oh-my-zsh
+  become_user: "{{ linux_user }}"
+  ansible.builtin.shell: |
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh) --unattended"
+  args:
+    creates: "/home/{{ linux_user }}/.oh-my-zsh"
+
+- name: install custom zsh plugins
+  ansible.builtin.git:
+    repo: "{{ item.repo }}"
+    dest: "/home/{{ linux_user }}/.oh-my-zsh/custom/plugins/{{ item.name }}"
+  become_user: "{{ linux_user }}"
+  loop: "{{ base_zsh_plugins }}"
+
+- name: Copy zshrc and p10k file
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/home/{{ linux_user }}/{{ item }}"
+    mode: '0644'
+    owner: "{{ linux_user }}"
+  loop: "{{ base_zsh_files }}"
+
+- name: Set global user name
+  community.general.git_config:
+    name: user.name
+    value: "{{ git_username }}"
+    scope: global
+
+- name: Set global user email
+  community.general.git_config:
+    name: user.email
+    value: "{{ git_email }}"
+    scope: global
+
+- name: Set timezone to Europe/Paris
+  community.general.timezone:
+    name: Europe/Paris
+
+- name: Ensure the locale exists and is correctly setup
+  community.general.locale_gen:
+    name: en_US.UTF-8
+    state: present
+
+- name: Create home sub directories
+  ansible.builtin.file:
+    path: "/home/{{ linux_user }}/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop: "{{ base_home_dirs }}"
+
+- name: Lowercasing XDG directories
+  ansible.builtin.copy:
+    src: user-dirs.dirs
+    dest: "/home/{{ linux_user }}/.config/user-dirs.dirs"
+    mode: '0644'
+    owner: "{{ linux_user }}"

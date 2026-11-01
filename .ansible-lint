@@ -1,0 +1,7 @@
+profile: basic
+exclude_paths:
+  - .git/
+  - roles/*/files/
+skip_list:
+  - yaml[truthy]
+  - yaml[line-length]

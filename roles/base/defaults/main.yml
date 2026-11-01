@@ -1,0 +1,27 @@
+---
+base_packages:
+  - zsh
+  - vim
+  - neovim
+  - fzf
+  - ripgrep
+  - fd-find
+  - bat
+  - git
+  - wget
+  - btop
+  - htop
+  - curl
+
+base_zsh_plugins:
+  - { name: fast-syntax-highlighting, repo: "https://github.com/zdharma-continuum/fast-syntax-highlighting.git" }
+  - { name: zsh-autosuggestions, repo: "https://github.com/zsh-users/zsh-autosuggestions.git" }
+  - { name: zsh-bat, repo: "https://github.com/fdellwing/zsh-bat.git" }
+
+base_zsh_files:
+  - .zshrc
+  - .p10k.zsh
+
+base_home_dirs:
+  - documents
+  - downloads

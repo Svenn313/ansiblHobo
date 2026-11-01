@@ -1,0 +1,9 @@
+---
+- name: cron docker prune every Sunday at 3:30 AM
+  ansible.builtin.cron:
+    name: "docker prune"
+    minute: "30"
+    hour: "3"
+    weekday: "0"
+    user: root
+    job: "docker system prune -f --filter until={{ docker_maintenance_prune_until }} >> {{ docker_maintenance_log_file }} 2>&1"

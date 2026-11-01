@@ -1,0 +1,24 @@
+#!/bin/bash
+# Alerte Matrix si un disque dépasse {{ notify_disk_threshold }}% ou si SMART signale un problème
+set -uo pipefail
+
+alerts=()
+
+while read -r pcent target; do
+    usage=${pcent%\%}
+    if [[ "$usage" -ge {{ notify_disk_threshold }} ]]; then
+        alerts+=("💾 ${target} à ${usage}%")
+    fi
+done < <(df --output=pcent,target -x tmpfs -x devtmpfs -x overlay -x squashfs | tail -n +2)
+
+while read -r dev _; do
+    if ! smartctl -H "$dev" 2>/dev/null | grep -qE "PASSED|OK"; then
+        alerts+=("🩺 SMART : problème sur ${dev}")
+    fi
+done < <(smartctl --scan)
+
+if [[ -n "${alerts[*]:-}" ]]; then
+    msg="⚠️ $(hostname) — $(date +%Y-%m-%dT%H:%M)"
+    for a in "${alerts[@]}"; do msg+=$'\n'"$a"; done
+    /usr/local/bin/notify-matrix "$msg"
+fi

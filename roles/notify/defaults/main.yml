@@ -1,0 +1,5 @@
+---
+notify_homeserver: https://matrix.svenlabs.fr
+notify_config_file: /etc/matrix_notify
+notify_disk_threshold: 85
+notify_alerts_log_file: /var/log/host-alerts.log

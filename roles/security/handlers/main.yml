@@ -1,0 +1,10 @@
+---
+# Le redémarrage réel de SSH est fait en fin de run (post_tasks de site.yml)
+- name: Restart SSH
+  ansible.builtin.set_fact:
+    security_ssh_restart: true
+
+- name: Restart fail2ban
+  ansible.builtin.service:
+    name: fail2ban
+    state: restarted

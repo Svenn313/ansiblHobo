@@ -1,0 +1,5 @@
+---
+- name: Windows machines
+  hosts: windows
+  roles:
+    - { role: windows, tags: windows }

@@ -1,0 +1,15 @@
+---
+backup_source_dir: "/home/{{ linux_user }}/git/cloudHobo"
+backup_script: /usr/local/bin/backup-cloudhobo
+backup_repo: "{{ restic_repo }}"   # voir vault.yml
+backup_password_file: /etc/restic-password
+backup_ssh_key: "/home/{{ linux_user }}/.ssh/resticBackup"
+backup_log_file: /var/log/backup-restic.log
+backup_verify_log_file: /var/log/restic-verify.log
+
+backup_keep_daily: 7
+backup_keep_weekly: 4
+backup_keep_monthly: 6
+
+# restic init si le dépôt n'est pas initialisé (nécessite backup_password_file présent)
+backup_init_repo: false

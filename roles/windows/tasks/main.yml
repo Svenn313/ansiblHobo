@@ -1,0 +1,9 @@
+---
+- name: Set timezone
+  community.windows.win_timezone:
+    timezone: "{{ windows_timezone }}"
+
+- name: Install packages with Chocolatey
+  chocolatey.chocolatey.win_chocolatey:
+    name: "{{ windows_packages }}"
+    state: present

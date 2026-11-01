@@ -1,0 +1,13 @@
+---
+nginx_domain: svenlabs.fr
+nginx_certbot_email: sven313@protonmail.com
+
+# Sites présents dans sites-available mais volontairement non activés
+nginx_sites_disabled:
+  - cadvisor
+  - grafana
+  - hedgedoc
+  - prometheus
+  - signal
+  - vaultwarden
+  - wireguard-easy

@@ -1,0 +1,9 @@
+---
+# Restaure volumes et secrets depuis le dernier snapshot restic (par-dessus le clone git).
+- name: Restore cloudHobo from latest restic snapshot
+  ansible.builtin.command: >
+    restic -r {{ backup_repo }}
+    --password-file {{ backup_password_file }}
+    -o sftp.args="-i {{ backup_ssh_key }} -o StrictHostKeyChecking=no -p 22"
+    restore latest --target / --include {{ backup_source_dir }}
+  changed_when: true

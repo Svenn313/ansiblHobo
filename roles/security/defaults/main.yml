@@ -1,0 +1,30 @@
+---
+security_ufw_public_tcp_ports:
+  - "80"
+  - "443"
+  - "8448"
+
+security_ufw_dns_sources:
+  - "192.168.1.0/24"
+  - "172.17.0.0/16"
+
+security_ufw_public_rules:
+  - { port: "5353", proto: "udp" }
+  - { port: "9987", proto: "udp" }
+  - { port: "10011", proto: "tcp" }
+  - { port: "30033", proto: "tcp" }
+
+security_ufw_dhcp_rules:
+  - { port: "67", proto: "udp" }
+  - { port: "68", proto: "udp" }
+
+security_lan: 192.168.1.0/24
+
+security_ssh_options:
+  MaxAuthTries: "3"
+  LoginGraceTime: "30"
+  PermitEmptyPasswords: "no"
+  AllowUsers: "{{ users_accounts | map(attribute='name') | join(' ') }}"
+  KexAlgorithms: curve25519-sha256,curve25519-sha256@libssh.org
+  Ciphers: chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com
+  MACs: hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com

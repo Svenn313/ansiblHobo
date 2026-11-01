@@ -1,2 +1,10 @@
 roles:
   - name: geerlingguy.docker
+
+collections:
+  - name: ansible.posix
+  - name: community.general
+  - name: community.docker
+  - name: ansible.windows
+  - name: community.windows
+  - name: chocolatey.chocolatey

@@ -1,0 +1,121 @@
+---
+- name: apt update
+  ansible.builtin.apt:
+    name: "*"
+    update_cache: yes
+
+- name: Packages install
+  ansible.builtin.apt:
+    name:
+      - nginx
+      - python3-certbot-dns-ovh
+      - certbot
+
+- name: create mandatory folders for nginx
+  ansible.builtin.file:
+    path: "/etc/nginx/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - snippets
+    - sites-available
+    - sites-enabled
+
+- name: create mandatory folders for letsencrypt
+  ansible.builtin.file:
+    path: "/etc/letsencrypt/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - ovh
+    - renewal
+    - archive
+    - live
+
+# Fichiers normalement créés par le plugin certbot-nginx (absent ici : certonly --dns-ovh) ; paramètres publics
+- name: Deploy TLS parameters used by nginx snippets
+  ansible.builtin.copy:
+    src: "letsencrypt/{{ item }}"
+    dest: "/etc/letsencrypt/{{ item }}"
+    owner: root
+    mode: '0644'
+  loop:
+    - options-ssl-nginx.conf
+    - ssl-dhparams.pem
+
+- name: Deploy OVH.ini file
+  ansible.builtin.copy:
+    src: vault/ovh.ini
+    dest: /etc/letsencrypt/ovh/ovh.ini
+    owner: root
+    mode: '0600'
+    decrypt: yes
+  diff: false
+
+- name: Generate SSL certificate
+  ansible.builtin.command: >
+    certbot certonly
+    --dns-ovh
+    --dns-ovh-credentials /etc/letsencrypt/ovh/ovh.ini
+    -d {{ nginx_domain }}
+    -d '*.{{ nginx_domain }}'
+    --agree-tos
+    --no-eff-email
+    --email {{ nginx_certbot_email }}
+  args:
+    creates: "/etc/letsencrypt/live/{{ nginx_domain }}/fullchain.pem"
+
+- name: Deploy renewal conf file
+  ansible.builtin.copy:
+    src: "vault/{{ nginx_domain }}.conf"
+    dest: "/etc/letsencrypt/renewal/{{ nginx_domain }}.conf"
+    owner: root
+    mode: '0600'
+    decrypt: yes
+  diff: false
+
+- name: Deploy nginx.conf file
+  ansible.builtin.copy:
+    src: nginx/nginx.conf
+    dest: /etc/nginx/nginx.conf
+
+- name: Deploy snippets file
+  ansible.builtin.copy:
+    src: nginx/snippets/
+    dest: /etc/nginx/snippets/
+
+- name: Deploy sites-available files
+  ansible.builtin.copy:
+    src: nginx/sites-available/
+    dest: /etc/nginx/sites-available/
+
+# Le paquet nginx installe un site "default" qui entre en conflit avec default-http (default_server)
+- name: Remove the packaged default site
+  ansible.builtin.file:
+    path: "/etc/nginx/{{ item }}/default"
+    state: absent
+  loop:
+    - sites-enabled
+    - sites-available
+  notify: Reload nginx
+
+- name: Find all sites-available
+  ansible.builtin.find:
+    path: /etc/nginx/sites-available
+    file_type: file
+  register: nginx_sites
+
+- name: Enable or disable sites (symlinks in sites-enabled)
+  ansible.builtin.file:
+    src: "{{ omit if (item.path | basename) in nginx_sites_disabled else '/etc/nginx/sites-available/' + (item.path | basename) }}"
+    dest: "/etc/nginx/sites-enabled/{{ item.path | basename }}"
+    state: "{{ 'absent' if (item.path | basename) in nginx_sites_disabled else 'link' }}"
+  loop: "{{ nginx_sites.files }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  notify: Reload nginx
+
+- name: Validate nginx configuration
+  ansible.builtin.command: nginx -t
+  changed_when: false
+  check_mode: false

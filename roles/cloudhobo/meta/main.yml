@@ -1,0 +1,3 @@
+---
+# La restauration restic nécessite le rôle backup (lancé avant dans site.yml)
+dependencies: []

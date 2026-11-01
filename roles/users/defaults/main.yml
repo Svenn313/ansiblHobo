@@ -1,0 +1,24 @@
+---
+users_accounts:
+  - name: sven
+    shell: /bin/zsh
+    groups: sudo
+    uid: 1000
+    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJiwxiEmpPQsqwx8zvQXRxx0qpVyxdOcTQvIM+kz+/77"
+  - name: discodino
+    shell: /bin/zsh
+    groups: sudo
+    uid: 1003
+    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFxeSzTYn/UgNDqix/UbNePgRZ8qyNE4kvziXHZGJ7V5"
+  - name: clementinator
+    shell: /bin/bash
+    uid: 1004
+    groups: ""
+    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKduwKeyooryPKqevg+Ok2jUR1d75hdorpCR3vkFl3ez openpgp:0xA46851E8"
+
+users_ssh_keys:
+  - { src: git_keys.vault,        dest: gitKey }
+  - { src: svenKey.vault,         dest: svenKey }
+  - { src: cloudhoboKey.vault,    dest: cloudhoboKey }
+  - { src: cronKey.vault,         dest: cronKey }
+  - { src: id_svenScaleway.vault, dest: id_svenScaleway }

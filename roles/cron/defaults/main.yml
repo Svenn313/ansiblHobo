@@ -1,0 +1,3 @@
+---
+cron_log_file: /var/log/ansiblHobo.log
+cron_healthcheck_url: "{{ vault_healthcheck_url }}"   # voir vault.yml

@@ -1,0 +1,13 @@
+---
+cloudhobo_repo: "git@github.com:Svenn313/CloudHobo.git"
+cloudhobo_dir: "/home/{{ linux_user }}/git/cloudHobo"
+cloudhobo_ssh_key: "/home/{{ linux_user }}/.ssh/cloudhoboKey"
+
+# Marqueur posé au premier clone, retiré une fois restauration + démarrage terminés
+cloudhobo_pending_marker: "{{ cloudhobo_dir }}/.ansible_restore_pending"
+
+# Restauration restic forcée, même si cloudHobo existe déjà : -e cloudhobo_force_restore=true
+cloudhobo_force_restore: false
+
+# docker compose up -d sur un serveur déjà en place (sinon : seulement après une restauration)
+cloudhobo_compose_up: false

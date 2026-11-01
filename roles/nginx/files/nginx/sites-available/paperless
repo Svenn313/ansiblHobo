@@ -1,0 +1,11 @@
+server {
+    server_name paperless.svenlabs.fr;
+    include snippets/security-headers.conf;
+    include snippets/tls.conf;
+    client_max_body_size 100M;
+
+    location / {
+      proxy_pass http://127.0.0.1:8000;
+      include snippets/proxy.conf;
+    }
+}

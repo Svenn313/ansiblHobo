@@ -1,0 +1,6 @@
+---
+windows_timezone: Romance Standard Time
+windows_packages:
+  - git
+  - 7zip
+  - vscode

@@ -1,0 +1,14 @@
+#!/bin/bash
+# Usage : notify-matrix "message"
+# Envoie un message dans la room Matrix configurée dans {{ notify_config_file }}
+set -euo pipefail
+
+source {{ notify_config_file }}
+
+body=$(python3 -c 'import json,sys; print(json.dumps({"msgtype": "m.text", "body": sys.argv[1]}))' "$1")
+
+curl -sf -X PUT \
+    "{{ notify_homeserver }}/_matrix/client/v3/rooms/${MATRIX_ROOM}/send/m.room.message/$$_$(date +%s%N)" \
+    -H "Authorization: Bearer ${MATRIX_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d "$body" > /dev/null

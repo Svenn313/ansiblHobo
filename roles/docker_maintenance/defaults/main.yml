@@ -1,0 +1,3 @@
+---
+docker_maintenance_log_file: /var/log/docker-maintenance.log
+docker_maintenance_prune_until: 168h

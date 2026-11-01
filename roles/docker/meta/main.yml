@@ -1,0 +1,13 @@
+---
+dependencies:
+  - role: geerlingguy.docker
+    vars:
+      docker_users:
+        - "{{ linux_user }}"
+      docker_daemon_options:
+        dns:
+          - 192.168.1.254
+        log-driver: json-file
+        log-opts:
+          max-size: "10m"
+          max-file: "3"

@@ -1,0 +1,71 @@
+---
+- name: Install restic
+  ansible.builtin.apt:
+    name: restic
+    state: present
+
+- name: Deploy restic SSH key (access to the remote repository)
+  ansible.builtin.copy:
+    src: vault/resticBackup.vault
+    dest: "{{ backup_ssh_key }}"
+    owner: "{{ linux_user }}"
+    mode: '0600'
+  diff: false
+
+- name: Deploy restic password file
+  ansible.builtin.copy:
+    src: vault/restic-password.vault
+    dest: "{{ backup_password_file }}"
+    owner: root
+    mode: '0600'
+  diff: false
+
+- name: Check restic repository
+  ansible.builtin.command: >
+    restic -r {{ backup_repo }}
+    --password-file {{ backup_password_file }}
+    -o sftp.args="-i {{ backup_ssh_key }} -o StrictHostKeyChecking=no -p 22"
+    cat config
+  register: backup_repo_check
+  changed_when: false
+  failed_when: false
+  when: backup_init_repo
+
+- name: Init restic repository
+  ansible.builtin.command: >
+    restic -r {{ backup_repo }}
+    --password-file {{ backup_password_file }}
+    -o sftp.args="-i {{ backup_ssh_key }} -o StrictHostKeyChecking=no -p 22"
+    init
+  when: backup_init_repo and backup_repo_check.rc != 0
+
+- name: Deploy backup restic script
+  ansible.builtin.template:
+    src: restic.sh.j2
+    dest: "{{ backup_script }}"
+    owner: root
+    mode: "0755"
+
+- name: Deploy restic verify script
+  ansible.builtin.template:
+    src: restic-verify.sh.j2
+    dest: /usr/local/bin/restic-verify
+    owner: root
+    mode: "0755"
+
+- name: cron backup restic at 4 AM
+  ansible.builtin.cron:
+    name: "backup restic"
+    minute: "0"
+    hour: "4"
+    user: root
+    job: "{{ backup_script }} >> {{ backup_log_file }} 2>&1"
+
+- name: cron restic check and restore test every Sunday at 6 AM
+  ansible.builtin.cron:
+    name: "restic verify"
+    minute: "0"
+    hour: "6"
+    weekday: "0"
+    user: root
+    job: "/usr/local/bin/restic-verify >> {{ backup_verify_log_file }} 2>&1"

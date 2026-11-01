@@ -1,0 +1,36 @@
+---
+- name: Install smartmontools
+  ansible.builtin.apt:
+    name: smartmontools
+    state: present
+
+- name: deploy matrix notify credentials
+  ansible.builtin.template:
+    src: matrix_notify.j2
+    dest: "{{ notify_config_file }}"
+    owner: root
+    group: "{{ linux_user }}"
+    mode: "0640"
+  diff: false
+
+- name: Deploy notify-matrix script
+  ansible.builtin.template:
+    src: notify-matrix.sh.j2
+    dest: /usr/local/bin/notify-matrix
+    owner: root
+    mode: "0755"
+
+- name: Deploy host-alerts script
+  ansible.builtin.template:
+    src: host-alerts.sh.j2
+    dest: /usr/local/bin/host-alerts
+    owner: root
+    mode: "0755"
+
+- name: cron host alerts every 6 hours
+  ansible.builtin.cron:
+    name: "host alerts"
+    minute: "0"
+    hour: "*/6"
+    user: root
+    job: "/usr/local/bin/host-alerts >> {{ notify_alerts_log_file }} 2>&1"

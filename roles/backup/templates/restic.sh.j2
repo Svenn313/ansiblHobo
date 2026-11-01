@@ -1,0 +1,61 @@
+#!/bin/bash
+set -euo pipefail
+cd {{ backup_source_dir }}
+
+# ─── Config ───────────────────────────────────────────────────────────────────
+RESTIC_REPO="{{ backup_repo }}"
+RESTIC_PASSWORD_FILE="{{ backup_password_file }}"
+
+# ─── Matrix Notify ────────────────────────────────────────────────────────────
+
+SCRIPT_FAILED=0
+SCRIPT_ERROR_MSG=""
+
+on_error() { SCRIPT_FAILED=1; SCRIPT_ERROR_MSG="Ligne $1 : $2"; }
+on_exit() {
+    if [[ $SCRIPT_FAILED -eq 1 ]]; then
+        /usr/local/bin/notify-matrix "❌ restic.sh a échoué sur $(hostname) — $(date +%Y-%m-%dT%H:%M)"$'\n'"🔍 ${SCRIPT_ERROR_MSG}" || true
+    fi
+}
+trap 'on_error $LINENO "$BASH_COMMAND"' ERR
+trap on_exit EXIT
+
+log()  { echo "  [$(date '+%H:%M:%S')] $*"; }
+
+# ──────────────────────────────────────────────────────────────────────────────
+
+echo ""
+echo "🔒 backup.sh — $(date)"
+echo ""
+
+# ─── 1. DUMP PostgreSQL ───────────────────────────────────────────────────────
+log "Dump PostgreSQL"
+mkdir -p postgres/dumps
+docker exec postgres pg_dumpall -U postgres > postgres/dumps/all.sql
+
+# ─── 2. BACKUP RESTIC ─────────────────────────────────────────────────────────
+log "Backup restic..."
+restic -r "$RESTIC_REPO" \
+  --password-file "$RESTIC_PASSWORD_FILE" \
+  -o sftp.args="-i {{ backup_ssh_key }} -o StrictHostKeyChecking=no -p 22" \
+  backup . \
+  --exclude ./arr_stack \
+  --exclude ./.git
+
+# ─── 3. CLEANING ─────────────────────────────────────────────────────────────
+log "Cleaning"
+rm -f postgres/dumps/all.sql
+
+# ─── 4. PURGE ─────────────────────────────────────────────────────────────────
+log "Purge old saves"
+restic -r "$RESTIC_REPO" \
+  --password-file "$RESTIC_PASSWORD_FILE" \
+  -o sftp.args="-i {{ backup_ssh_key }} -o StrictHostKeyChecking=no -p 22" \
+  forget --prune \
+  --keep-daily {{ backup_keep_daily }} \
+  --keep-weekly {{ backup_keep_weekly }} \
+  --keep-monthly {{ backup_keep_monthly }}
+
+echo ""
+log "✅ Backup done"
+echo ""

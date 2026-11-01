@@ -1,0 +1,4 @@
+---
+# Windows accessible en SSH (OpenSSH Server à activer sur chaque poste) avec PowerShell
+ansible_connection: ssh
+ansible_shell_type: powershell

@@ -1,0 +1,47 @@
+---
+# Les shells doivent exister avant de les assigner : sinon sshd refuse la connexion de l'utilisateur
+- name: Install zsh (login shell of some users)
+  ansible.builtin.apt:
+    name: zsh
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create users
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    shell: "{{ item.shell }}"
+    groups: "{{ item.groups }}"
+    uid: "{{ item.uid }}"
+    append: yes
+    create_home: yes
+  loop: "{{ users_accounts }}"
+
+- name: Add SSH keys
+  ansible.posix.authorized_key:
+    user: "{{ item.name }}"
+    key: "{{ item.key }}"
+  loop: "{{ users_accounts }}"
+
+- name: Ensure .ssh directory
+  ansible.builtin.file:
+    path: "/home/{{ linux_user }}/.ssh"
+    state: directory
+    owner: "{{ linux_user }}"
+    mode: '0700'
+
+- name: Copy SSH keys
+  ansible.builtin.copy:
+    src: "vault/{{ item.src }}"
+    dest: "/home/{{ linux_user }}/.ssh/{{ item.dest }}"
+    mode: '0600'
+    owner: "{{ linux_user }}"
+  loop: "{{ users_ssh_keys }}"
+  diff: false
+
+- name: Copy git ssh config file
+  ansible.builtin.copy:
+    src: sshConfig
+    dest: "/home/{{ linux_user }}/.ssh/config"
+    mode: "0600"
+    owner: "{{ linux_user }}"

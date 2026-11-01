@@ -1,0 +1,35 @@
+---
+- name: touch cron log file
+  ansible.builtin.file:
+    path: "{{ cron_log_file }}"
+    state: touch
+    mode: "0644"
+    owner: "{{ linux_user }}"
+
+- name: cron, as root, that certbot renew every 12 hours
+  ansible.builtin.cron:
+    name: "certbot renew"
+    minute: "0"
+    hour: "*/12"
+    user: root
+    job: certbot renew --quiet
+
+- name: cron that healthping check runs every 10 minutes
+  ansible.builtin.cron:
+    name: healthping check
+    minute: "*/10"
+    hour: "*"
+    user: "{{ linux_user }}"
+    job: "curl -fsS -m 10 --retry 3 {{ cron_healthcheck_url }} > /dev/null"
+
+- name: remove old copyNginx cron (nginx config now lives in the repo)
+  ansible.builtin.cron:
+    name: copyNginx to ansiblHobo
+    user: "{{ linux_user }}"
+    state: absent
+
+- name: remove old xtract cron (replaced by restic)
+  ansible.builtin.cron:
+    name: copy cloudHobo to ansiblHobo
+    user: "{{ linux_user }}"
+    state: absent

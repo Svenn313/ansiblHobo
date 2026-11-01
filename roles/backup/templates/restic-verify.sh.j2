@@ -1,0 +1,29 @@
+#!/bin/bash
+# Vérifie l'intégrité du dépôt restic (5% des données) et teste une restauration
+set -euo pipefail
+
+RESTIC=(restic -r "{{ backup_repo }}"
+        --password-file "{{ backup_password_file }}"
+        -o sftp.args="-i {{ backup_ssh_key }} -o StrictHostKeyChecking=no -p 22")
+TARGET="$(mktemp -d)"
+SCRIPT_FAILED=0
+SCRIPT_ERROR_MSG=""
+
+on_error() { SCRIPT_FAILED=1; SCRIPT_ERROR_MSG="Ligne $1 : $2"; }
+on_exit() {
+    rm -rf "$TARGET"
+    if [[ $SCRIPT_FAILED -eq 1 ]]; then
+        /usr/local/bin/notify-matrix "❌ restic-verify a échoué sur $(hostname) — $(date +%Y-%m-%dT%H:%M)"$'\n'"🔍 ${SCRIPT_ERROR_MSG}" || true
+    fi
+}
+trap 'on_error $LINENO "$BASH_COMMAND"' ERR
+trap on_exit EXIT
+
+echo "🔎 restic-verify — $(date)"
+
+"${RESTIC[@]}" check --read-data-subset=5%
+
+"${RESTIC[@]}" restore latest --target "$TARGET" --include "{{ backup_source_dir }}/docker-compose.yml"
+test -s "$TARGET{{ backup_source_dir }}/docker-compose.yml"
+
+echo "✅ restic-verify OK"

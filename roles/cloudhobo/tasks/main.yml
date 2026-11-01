@@ -1,0 +1,52 @@
+---
+# Serveur vierge (cloudHobo absent) : clone, restauration restic puis démarrage de la stack.
+# Serveur existant : rien n'est touché (sauf cloudhobo_force_restore / cloudhobo_compose_up).
+- name: Check if cloudHobo is already installed
+  ansible.builtin.stat:
+    path: "{{ cloudhobo_dir }}"
+  register: cloudhobo_existing
+
+- name: Create git directory
+  ansible.builtin.file:
+    path: "{{ cloudhobo_dir | dirname }}"
+    state: directory
+    owner: "{{ linux_user }}"
+
+- name: Clone cloudHobo repository
+  ansible.builtin.git:
+    repo: "{{ cloudhobo_repo }}"
+    dest: "{{ cloudhobo_dir }}"
+    key_file: "{{ cloudhobo_ssh_key }}"
+    accept_hostkey: yes
+    update: no
+  become_user: "{{ linux_user }}"
+
+- name: Mark fresh install (restore pending)
+  ansible.builtin.file:
+    path: "{{ cloudhobo_pending_marker }}"
+    state: touch
+    owner: "{{ linux_user }}"
+    modification_time: preserve
+    access_time: preserve
+  when: not cloudhobo_existing.stat.exists
+
+- name: Check if a restore is pending
+  ansible.builtin.stat:
+    path: "{{ cloudhobo_pending_marker }}"
+  register: cloudhobo_pending
+
+- name: Restore from restic
+  ansible.builtin.include_tasks: restore.yml
+  when: cloudhobo_pending.stat.exists or cloudhobo_force_restore
+
+- name: Start the stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ cloudhobo_dir }}"
+    state: present
+    pull: missing
+  when: cloudhobo_pending.stat.exists or cloudhobo_force_restore or cloudhobo_compose_up
+
+- name: Restore done
+  ansible.builtin.file:
+    path: "{{ cloudhobo_pending_marker }}"
+    state: absent
