@@ -5,8 +5,24 @@
 group_vars/secrets.yml.dec
 *.dec
 
+# Secrets en clair : ne jamais commiter hors *.vault
+*.pem
+*.key
+*.env
+.env
+id_*
+!id_*.vault
+*Key
+!*Key.vault
+restic-password
+!restic-password.vault
+*.pub.bak
+
 # Retry files Ansible
 *.retry
 
 # OS
 .DS_Store
+
+# Sorties de dry-run (contiennent des infos sur le serveur)
+check.txt
