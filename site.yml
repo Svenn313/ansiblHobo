@@ -1,0 +1,132 @@
+---
+# 1. Préparation de la connexion (automatique, ignorée si lancé sur le serveur lui-même avec -e ansible_connection=local) :
+#    - port SSH : celui de l'inventaire s'il répond, sinon 22 (installation vierge)
+#    - clé SSH refusée (serveur réinstallé) : oubli de l'ancienne empreinte et demande du mot de passe
+- name: Prepare connection
+  hosts: linux
+  gather_facts: false
+  connection: local
+  tags: always
+  tasks:
+    - name: Prepare SSH connection (skipped when run on the server itself)
+      when: hostvars[inventory_hostname].ansible_connection | default('ssh') != 'local'
+      block:
+        - name: Probe the configured SSH port
+          ansible.builtin.wait_for:
+            host: "{{ ansible_host }}"
+            port: "{{ ansible_port | default(22) }}"
+            timeout: 5
+            msg: "Port {{ ansible_port | default(22) }} injoignable"
+          register: ssh_probe
+          ignore_errors: true
+
+        - name: Fall back to port 22 (fresh install)
+          ansible.builtin.set_fact:
+            ansible_port: 22
+          when: ssh_probe is failed
+
+        - name: Pin the effective SSH port (used later to keep it open in UFW)
+          ansible.builtin.set_fact:
+            ansible_port: "{{ ansible_port | default(22) }}"
+
+        - name: Test key authentication
+          ansible.builtin.command: >
+            ssh -i {{ ansible_ssh_private_key_file | expanduser }}
+            -p {{ ansible_port | default(22) }}
+            -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=5
+            -o StrictHostKeyChecking=accept-new
+            {{ ansible_user }}@{{ ansible_host }} true
+          register: ssh_key_probe
+          retries: 2
+          delay: 3
+          until: ssh_key_probe.rc == 0
+          changed_when: false
+          failed_when: false
+          check_mode: false
+
+        - name: Forget stale host keys (server reinstalled)
+          ansible.builtin.command: ssh-keygen -R "{{ item }}"
+          loop:
+            - "{{ ansible_host }}"
+            - "[{{ ansible_host }}]:{{ ssh_port }}"
+          changed_when: false
+          failed_when: false
+          when: ssh_key_probe.rc != 0
+
+        - name: Check sshpass is installed (needed for password login)
+          ansible.builtin.command: which sshpass
+          register: sshpass_check
+          changed_when: false
+          failed_when: false
+          when: ssh_key_probe.rc != 0
+
+        - name: Require sshpass
+          ansible.builtin.assert:
+            that: sshpass_check.rc == 0
+            fail_msg: "sshpass est requis pour la connexion par mot de passe : sudo apt install sshpass"
+          when: ssh_key_probe.rc != 0
+
+        - name: Ask for the server password (SSH + sudo)
+          ansible.builtin.pause:
+            prompt: "La clé SSH n'est pas acceptée : mot de passe de {{ ansible_user }} sur {{ inventory_hostname }}"
+            echo: false
+          register: ssh_password
+          when: ssh_key_probe.rc != 0
+
+        - name: Use the password for this run
+          ansible.builtin.set_fact:
+            ansible_password: "{{ ssh_password.user_input }}"
+            ansible_become_password: "{{ ssh_password.user_input }}"
+          no_log: true
+          when: ssh_key_probe.rc != 0
+
+- name: Linux homeserver
+  hosts: linux
+  become: true
+  roles:
+    - { role: users,               tags: users }
+    - { role: base,                tags: base }
+    - { role: unattended_upgrades, tags: unattended_upgrades }
+    - { role: security,            tags: security }
+    - { role: docker,              tags: docker }
+    - { role: docker_maintenance,  tags: docker_maintenance }
+    - { role: notify,              tags: notify }
+    - { role: backup,              tags: backup }
+    - { role: cloudhobo,           tags: cloudhobo }
+    - { role: nginx,               tags: nginx }
+    - { role: cron,                tags: cron }
+
+  # Le changement de port SSH est appliqué en dernier : la connexion du run reste valide jusque-là
+  post_tasks:
+    - name: Check the SSH port is listening
+      ansible.builtin.command: ss -ltnH "sport = :{{ ssh_port }}"
+      register: ssh_listening
+      changed_when: false
+      check_mode: false
+      tags: security
+
+    - name: Apply SSH configuration
+      when: (security_ssh_restart | default(false)) or (ssh_listening.stdout | trim == '')
+      tags: security
+      block:
+        - name: Is ssh.socket in use (Ubuntu 24.04)?
+          ansible.builtin.command: systemctl is-enabled ssh.socket
+          register: ssh_socket
+          changed_when: false
+          failed_when: false
+          check_mode: false
+
+        - name: Reload systemd units
+          ansible.builtin.systemd:
+            daemon_reload: true
+
+        - name: Restart ssh.socket
+          ansible.builtin.systemd:
+            name: ssh.socket
+            state: restarted
+          when: ssh_socket.rc == 0
+
+        - name: Restart ssh
+          ansible.builtin.systemd:
+            name: ssh
+            state: restarted
